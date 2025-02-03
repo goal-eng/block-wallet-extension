@@ -12,9 +12,10 @@ export type ManifestEntryPoints = {
     devtools?: string;
   };
   content: Record<string, {
-    js: string;
-    css: string;
+    js: string[];
+    css: string[];
   }>;
+  resources: string[];
   background: string;
 }
 

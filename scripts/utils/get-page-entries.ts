@@ -4,8 +4,9 @@ import { resolve } from 'path';
 
 const entrySearch = {
   html: [/index(-\w+)?\.html/i],
-  ts: [/index\.(ts|js)/],
-  build: [/index\.js/, /\.css$/],
+  ts: [/(index|inject)\.(ts|js)/],
+  build: [/(index|inject)\.js/, /\.css$/],
+  resources: [/\.js/, /\.css$/],
 }
 
 export async function getEntryPoint(path: string, type: keyof typeof entrySearch) {

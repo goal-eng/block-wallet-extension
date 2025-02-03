@@ -10,7 +10,8 @@ export function buildManifestV3(
     background,
     version,
     description,
-    name
+    name,
+    resources
   } = config;
 
   const manifest: ManifestV3 = {
@@ -28,6 +29,10 @@ export function buildManifestV3(
     host_permissions: hostPermissions,
     content_scripts: contentScripts,
     action: {},
+    web_accessible_resources: [{
+      matches: ["<all_urls>"],
+      resources: pages.popup ? [pages.popup, ...resources] : resources,
+    }]
   }
 
   if (background) {

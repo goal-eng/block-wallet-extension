@@ -68,6 +68,7 @@ export async function builderGetEntries() {
     background,
     content,
     pages,
+    resources
   ] = await Promise.all([
     getEntryPoint(paths.distBackground, 'build').then(
       (entries) => relative(paths.distCommon, entries.find((entry) => entry.endsWith('.js'))!)
@@ -75,8 +76,10 @@ export async function builderGetEntries() {
     builderGetEntriesSubDir(
       paths.distContentScripts,
       (path) => getEntryPoint(path, 'build').then((entries) => ({
-        js: relative(paths.distCommon, entries.find((entry) => entry.endsWith('.js'))!),
-        css: relative(paths.distCommon, entries.find((entry) => entry.endsWith('.css'))!),
+        // js: relative(paths.distCommon, entries.find((entry) => entry.endsWith('.js'))!),
+        // css: relative(paths.distCommon, entries.find((entry) => entry.endsWith('.css'))!),
+        js: entries.map((entry) => relative(paths.distCommon, entry)).filter((entry) => entry.endsWith('.js')),
+        css: entries.map((entry) => relative(paths.distCommon, entry)).filter((entry) => entry.endsWith('.css')),
       })),
     ),
     builderGetEntriesSubDir(
@@ -85,12 +88,16 @@ export async function builderGetEntries() {
         (entries) => relative(paths.distCommon, entries[0])
       ),
     ),
+    getEntryPoint(paths.distResources, 'resources').then(
+      (entries) => entries.map((entry) => relative(paths.distCommon, entry)).filter((entry) => entry.endsWith('.js'))
+    ),
   ])
 
   return {
     background,
     pages,
     content,
+    resources
   }
 }
 
@@ -126,6 +133,7 @@ export async function builderCommon() {
       builderEntryScript(path, resolve(paths.distContentScripts, relative(paths.contentScripts, path)))
     ),
     builderEntryScript(resolve(paths.background), resolve(paths.distBackground)),
+    builderEntryScript(resolve(paths.resources), resolve(paths.distResources)),
     copyDir(paths.public, paths.distCommon),
   ]);
 }
@@ -141,6 +149,7 @@ export async function builderVersion(version: number, entries: ManifestEntryPoin
   await Promise.all([
     builderManifest(version, outPath, entries),
     copyDir(paths.distBackground, outPath),
+    copyDir(paths.distResources, outPath),
     copyDir(paths.distContentScripts, outPath),
     copyDir(paths.distPages, outPath),
     copyDir(paths.distPublic, outPath),

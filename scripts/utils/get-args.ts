@@ -27,7 +27,7 @@ export function getArgs() {
 
     return acc;
   }, {} as Args & { browser: string });
-
+  
   if (args.browser) {
     args.browsers = args.browser.split(',');
   }

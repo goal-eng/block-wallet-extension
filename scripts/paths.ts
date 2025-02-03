@@ -11,6 +11,7 @@ export const paths = {
   distPublic: resolve(__dirname, 'dist', 'common', 'public'),
   distBackground: resolve(__dirname, 'dist', 'common', 'background'),
   distContentScripts: resolve(__dirname, 'dist', 'common', 'content-scripts'),
+  distResources: resolve(__dirname, 'dist', 'common', 'resources'),
 
   src: resolve(__dirname, 'src'),
   pages: resolve(__dirname, 'src', 'pages'),
@@ -18,6 +19,7 @@ export const paths = {
   manifest: resolve(__dirname, 'src', 'manifest'),
   background: resolve(__dirname, 'src', 'background'),
   contentScripts: resolve(__dirname, 'src', 'content-scripts'),
+  resources: resolve(__dirname, 'src', 'resources'),
 
   profiles: resolve(__dirname, 'tmp', 'profiles'),
 }

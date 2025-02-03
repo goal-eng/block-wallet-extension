@@ -1,0 +1,257 @@
+{
+    "address": "A77rXueYXYg3bJejEFRuQFv2bbV3sBhCZwotH4cy4HCX",
+    "metadata": {
+      "name": "block_wallet",
+      "version": "0.1.0",
+      "spec": "0.1.0",
+      "description": "Created with Anchor"
+    },
+    "instructions": [
+      {
+        "name": "block_wallet",
+        "discriminator": [
+          132,
+          75,
+          123,
+          1,
+          97,
+          186,
+          159,
+          194
+        ],
+        "accounts": [
+          {
+            "name": "user",
+            "writable": true,
+            "signer": true
+          },
+          {
+            "name": "wallet",
+            "writable": true,
+            "pda": {
+              "seeds": [
+                {
+                  "kind": "const",
+                  "value": [
+                    119,
+                    97,
+                    108,
+                    108,
+                    101,
+                    116
+                  ]
+                },
+                {
+                  "kind": "account",
+                  "path": "user"
+                }
+              ]
+            }
+          },
+          {
+            "name": "fee_account",
+            "writable": true
+          },
+          {
+            "name": "system_program",
+            "address": "11111111111111111111111111111111"
+          }
+        ],
+        "args": [
+          {
+            "name": "block_duration",
+            "type": "i64"
+          }
+        ]
+      },
+      {
+        "name": "get_block_status",
+        "discriminator": [
+          197,
+          106,
+          226,
+          218,
+          122,
+          232,
+          16,
+          218
+        ],
+        "accounts": [
+          {
+            "name": "wallet",
+            "writable": true,
+            "pda": {
+              "seeds": [
+                {
+                  "kind": "const",
+                  "value": [
+                    119,
+                    97,
+                    108,
+                    108,
+                    101,
+                    116
+                  ]
+                },
+                {
+                  "kind": "account",
+                  "path": "user"
+                }
+              ]
+            }
+          },
+          {
+            "name": "user",
+            "signer": true
+          }
+        ],
+        "args": [],
+        "returns": "i64"
+      },
+      {
+        "name": "initialize",
+        "discriminator": [
+          175,
+          175,
+          109,
+          31,
+          13,
+          152,
+          155,
+          237
+        ],
+        "accounts": [
+          {
+            "name": "user",
+            "writable": true,
+            "signer": true
+          },
+          {
+            "name": "wallet",
+            "writable": true,
+            "pda": {
+              "seeds": [
+                {
+                  "kind": "const",
+                  "value": [
+                    119,
+                    97,
+                    108,
+                    108,
+                    101,
+                    116
+                  ]
+                },
+                {
+                  "kind": "account",
+                  "path": "user"
+                }
+              ]
+            }
+          },
+          {
+            "name": "system_program",
+            "address": "11111111111111111111111111111111"
+          }
+        ],
+        "args": [
+          {
+            "name": "fee_account",
+            "type": "pubkey"
+          }
+        ]
+      },
+      {
+        "name": "unblock_wallet",
+        "discriminator": [
+          123,
+          52,
+          119,
+          61,
+          139,
+          43,
+          126,
+          73
+        ],
+        "accounts": [
+          {
+            "name": "user",
+            "writable": true,
+            "signer": true
+          },
+          {
+            "name": "wallet",
+            "writable": true,
+            "pda": {
+              "seeds": [
+                {
+                  "kind": "const",
+                  "value": [
+                    119,
+                    97,
+                    108,
+                    108,
+                    101,
+                    116
+                  ]
+                },
+                {
+                  "kind": "account",
+                  "path": "user"
+                }
+              ]
+            }
+          },
+          {
+            "name": "fee_account",
+            "writable": true
+          },
+          {
+            "name": "system_program",
+            "address": "11111111111111111111111111111111"
+          }
+        ],
+        "args": []
+      }
+    ],
+    "accounts": [
+      {
+        "name": "Wallet",
+        "discriminator": [
+          24,
+          89,
+          59,
+          139,
+          81,
+          154,
+          232,
+          95
+        ]
+      }
+    ],
+    "errors": [
+      {
+        "code": 6000,
+        "name": "BlockNotExpired",
+        "msg": "Block duration has not yet expired"
+      }
+    ],
+    "types": [
+      {
+        "name": "Wallet",
+        "type": {
+          "kind": "struct",
+          "fields": [
+            {
+              "name": "block_expiry",
+              "type": "i64"
+            },
+            {
+              "name": "fee_account",
+              "type": "pubkey"
+            }
+          ]
+        }
+      }
+    ]
+}

@@ -1,6 +1,6 @@
 import './index.css';
 import { config } from '@common/config';
-import { addButtonEventListener } from '../main';
+import { addButtonEventListener } from '../main/modal';
 
 // Target a parent container where new divs are being generated
 const targetNode = document.body; // Adjust this selector based on your use case

@@ -7,8 +7,9 @@ import discardComments from 'postcss-discard-comments';
 import postcssPluginNamespace from 'postcss-plugin-namespace';
 import addSlashesPlugin from './postcss-add-slashes';
 import cssnano from 'cssnano';
-
 import { esbuildCssPlugin } from './scripts/utils';
+import { Buffer } from 'buffer';
+import { polyfillNode } from 'esbuild-plugin-polyfill-node';
 
 export function makeConfig(entryPoints: string[], outDir: string, isHtml?: boolean) {
   const config: BuildOptions = {
@@ -26,6 +27,7 @@ export function makeConfig(entryPoints: string[], outDir: string, isHtml?: boole
       '.json': 'json',
     },
     plugins: [
+      polyfillNode(),
       esbuildCssPlugin({
         plugins: [
           tailwindcss,

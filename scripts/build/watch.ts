@@ -70,6 +70,12 @@ export function startWatching(versions: number[]) {
       await copyRebuild(versions, paths.distBackground);
     }
 
+    if (filePath.startsWith(paths.resources)) {
+      console.log(`Rebuild script: ${relativePath}`);
+      await builderEntryScript(resolve(paths.resources), resolve(paths.distResources));
+      await copyRebuild(versions, paths.distResources);
+    }
+
     if (filePath.startsWith(paths.manifest)) {
       console.log('Manifest rebuilding is not available now. You should restart build manual');
       process.exit(1);

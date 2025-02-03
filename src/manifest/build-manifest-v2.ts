@@ -10,7 +10,8 @@ export function buildManifestV2(
     background,
     version,
     description,
-    name
+    name,
+    resources
   } = config;
 
   const manifest: ManifestV2 = {
@@ -34,6 +35,7 @@ export function buildManifestV2(
         id: 'addon@example.com',
       }
     },
+    web_accessible_resources: pages.popup ? [pages.popup, ...resources] : resources
   };
 
   if (background) {

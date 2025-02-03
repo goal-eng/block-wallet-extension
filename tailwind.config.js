@@ -18,8 +18,11 @@ export default {
           DEFAULT: "#1C2434",
           2: "#010101",
         },
+        green: {
+          DEFAULT: "#22c55e",
+        },
         red: {
-          DEFAULT: "#a0393c",
+          DEFAULT: "#ef4544",
         },
         body: "#64748B",
         bodydark: "#222222",
@@ -74,6 +77,7 @@ export default {
         md: '8px',
         lg: '16px',
         xl: '24px',
+        2.5: "0.625rem",
         4.5: "1.125rem",
         5.5: "1.375rem",
         6.5: "1.625rem",
