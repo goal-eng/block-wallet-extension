@@ -4,7 +4,7 @@ import { buildManifestV2 } from "./build-manifest-v2";
 import { buildManifestV3 } from "./build-manifest-v3";
 import { contentScripts } from '../content-scripts';
 
-export const hostPermissions = ['https://photon-sol.tinyastro.io/*', 'https://dexscreener.com/solana/*', 'https://pump.fun/*', 'http://localhost:3000/*'];
+export const hostPermissions = ['https://photon-sol.tinyastro.io/*', 'https://dexscreener.com/*', 'https://pump.fun/*', 'https://gmgn.ai/*', 'http://localhost:3000/*'];
 export function buildManifest(version: number, config: ManifestConfig) {
 
   const scripts = Object.entries(contentScripts)

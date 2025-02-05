@@ -10,7 +10,6 @@ import { PhantomWalletAdapter } from '@solana/wallet-adapter-wallets';
 import { WalletReadyState } from '@solana/wallet-adapter-base';
 
 let wallet = new PhantomWalletAdapter();
-wallet.connect();
 
 const _SOLANA_CONNECTION = new Connection(clusterApiUrl("devnet"));
 const _FEE_ACCOUNT = new PublicKey("FwLFdJeGwx7UUAQReU4tx94KA4KZjyp4eX8kdWf4yyG8");
@@ -163,3 +162,13 @@ window.addEventListener("message", async (event) => {
         }
     }
 });
+
+const initialize = async () => {
+    try {
+        await wallet.connect();
+        await updateWalletAddress();
+    } catch {
+    }
+};
+
+initialize();
