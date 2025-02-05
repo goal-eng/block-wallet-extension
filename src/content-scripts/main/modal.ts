@@ -1,105 +1,196 @@
-import { initialize } from 'esbuild';
 import './index.css';
+import { config } from '@common/config';
 
-let isTokenDisabled = false;
-let isTokenChecking = false;
-let blockExpiry = 0;
-const RISK_SCORE = 5000;
+console.log(`Content script main`, config);
 
-// Event delegation for dynamically added buttons
+const globalCSS = `
+._ex_modal {
+    position: fixed;
+    z-index: 9999;
+    border-radius: 8px;
+    background-color: #151419;
+    padding: 16px;
+    font-size: 16px;
+    max-width: 400px;
+    visibility: hidden;
+    border: 1px solid #222;
+    box-shadow: 0px 4px 10px #000;
+}
+._ex_modal > ._ex_block {
+    border-radius: 7px;
+    background-color: #1a1c24;
+    padding: 10px 20px;
+    margin-top: 12px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+}
+._ex_modal > ._ex_block:first-of-type {
+    margin-top: 0px;
+}
+._ex_modal > ._ex_block ._ex_title {
+    font-weight: 700;
+    color: white;
+    font-size: 18px;
+}
+._ex_modal > ._ex_block ._ex_sub_title {
+    font-size: 18px;
+    color: #5fc43e;
+}
+._ex_modal .danger {
+    color:rgb(250, 54, 58) !important;
+}
 
-window.addEventListener("message", (event) => {
-  if (event.source !== window) return;
-  
-  switch (event.data.type) {
-      case "UPDATE_WALLET_ADDRESS":
-          // Send the Phantom Wallet address to the background script
-          event.data.expiry && (blockExpiry = event.data.expiry);
-          break;
-      default:
-          break;
-  }
-});
+._ex_modal .warning {
+    color: #faad14 !important;
+}
 
-async function checkToken() {
-  if (isTokenChecking) return;
-  isTokenChecking = true;
+._ex_modal > ._ex_block > ._ex_block_rows {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    width: 100%;
+}
+._ex_modal > ._ex_block > ._ex_block_rows > ._ex_block_row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+}
+._ex_modal > ._ex_block ._ex_label {
+    font-size: 16px;
+    color: white;
+}
+._ex_modal > ._ex_block ._ex_result {
+    font-size: 14px;
+    border-radius: 3px;
+    background-color: #141720;
+    color: #5fc43e;
+    padding: 5px;
+}
+._ex_modal > ._ex_block ._ex_result > ._ex_detail {
+    color: #454966;
+}`;
 
-  const pairName = location.pathname.substring(location.pathname.lastIndexOf('/') + 1).split('?')[0];
-  let tokenName  = '';
+// Create a <style> element
+const styleElement = document.createElement('style');
+styleElement.innerHTML = globalCSS;
 
-  try {
-    const getPairUrl = `https://api.dexscreener.com/latest/dex/pairs/solana/${pairName}`;
-    let response = await fetch(getPairUrl);
-    let data = await response.json();
+// Append the <style> element to the <head>
+document.head.appendChild(styleElement);
 
-    if (data.pairs && data.pairs.length > 0) {
-        const baseToken = data.pairs[0].baseToken.address;
-        // const quoteToken = data.pairs[0].quoteToken.address;
-        tokenName = baseToken;
-    }else {
-      const getTokenUrl = `https://api.dexscreener.com/latest/dex/tokens/${pairName}`;
-      response = await fetch(getTokenUrl);
-      data = await response.json();
-      if (data.pairs && data.pairs.length > 0) {
-        const baseToken = data.pairs[0].baseToken.address;
-        // const quoteToken = data.pairs[0].quoteToken.address;
-        tokenName = baseToken;
-      }
-    }
+const modalElement = document.createElement('div');
+modalElement.className = '_ex_modal';
+modalElement.id = '_ex_modal';
 
-    console.log("Token Name", tokenName);
-    if (!tokenName) {
-      isTokenChecking = false;
-      isTokenDisabled = false;
-      return;
-    }
-
-    const rugCheckUrl = `https://api.rugcheck.xyz/v1/tokens/${tokenName}/report/summary`;
-    response = await fetch(rugCheckUrl);
-    data = await response.json();
-
-    console.log("Rug Check Result", data);
+modalElement.innerHTML = `
+<div class="_ex_block _ex_first">
     
-    if (data.score && Number(data.score) >= RISK_SCORE) {
-      isTokenDisabled = true;
-    }
-  } catch (error) {
-      console.error("Error fetching data:", error);
-      isTokenDisabled = false;
-  }
+</div>
+<div class="_ex_block _ex_second">
+    <div class="_ex_block_rows">
+        <div class="_ex_block_row">
+            <span class="_ex_label">Top 10 Holers:</span>
+            <span class="_ex_result">29.11%</span>
+        </div>
+        <div class="_ex_block_row">
+            <span class="_ex_label">Whale Wallets:</span>
+            <span class="_ex_result">
+                2
+                <span class="_ex_detail">[View wallet: 1, 2]</span>
+            </span>
+        </div>
+    </div>
+</div>
+`;
 
-  isTokenChecking = false;
-}
+document.body.appendChild(modalElement);
 
-checkToken();
+const dropdown = modalElement;
 
-let lastPathname = window.location.pathname;
-
-const observer = new MutationObserver(() => {
-  if (lastPathname === window.location.pathname) return;
-  lastPathname = window.location.pathname;
-  console.log("Pathname changed:", window.location.pathname);
-  checkToken();
-});
-
-observer.observe(document.body, { childList: true, subtree: true });
-
-export function handleBuySellButton(event: Event) {
-  if (Number(blockExpiry || 0) > new Date().getTime()) {
-      event.preventDefault();
-      event.stopPropagation();
-      event.stopImmediatePropagation();
-      alert("This token is danger. Please do not buy or sell this token.");
-  }
-}
-
-export const initializeButtonEvent = (callback: any): void => {
-    document.body.addEventListener('click', (event: MouseEvent) => {
-        if (!isTokenDisabled) return;
-
-        if (callback(event)) {
-            handleBuySellButton(event);
-        }
-    });
+let modalInfo = {
+    isError: true,
+    name: "",
+    symbol: "",
+    score: 0,
+    risks: []
 };
+
+export const DANGER_SCORE = 5000;
+export const WARNING_SCORE = 1000;
+
+export const getScoreClassName = (score: number) => {
+    return score > DANGER_SCORE ? 'danger' : (score > WARNING_SCORE ? 'warning' : '');
+}
+
+export const rebuildModal = (info: any = null) => {
+    if (!info || info.isError) {
+        modalInfo.isError = true;
+        return;
+    }
+    modalInfo = { isError: false, ...info};
+    const titleNode = dropdown.querySelector('._ex_first');
+    if (titleNode) {
+        if (modalInfo.score > DANGER_SCORE) {
+            titleNode.innerHTML = `<span class="_ex_title danger">DANGER!!! DON'T TRADE!</span>`;
+        }else {
+            titleNode.innerHTML = `
+                <span class="_ex_title">${modalInfo.symbol}</span>
+                <span class="_ex_sub_title">${modalInfo.name}</span>
+            `;
+        }
+    }
+
+    const risksNode = dropdown.querySelector('._ex_block_rows');
+    let riskHtml = `
+        <div class="_ex_block_row">
+            <span class="_ex_label">Total score:</span>
+            <span class="${'_ex_result ' + getScoreClassName(Number(modalInfo.score || 0))}">${modalInfo.score}</span>
+        </div>`;
+    modalInfo.risks && modalInfo.risks.length > 0 && (riskHtml += `<div style="border-bottom: 1px solid #303030;"></div>`);
+    modalInfo.risks.forEach((risk: any) => {
+        riskHtml += `
+        <div class="_ex_block_row">
+            <span class="_ex_label">${risk.name + ' ' + risk.value}:</span>
+            <span class="${'_ex_result ' + getScoreClassName(Number(risk.score || 0)) }">${risk.score}</span>
+        </div>`;
+    });
+    risksNode && (risksNode.innerHTML = riskHtml);
+}
+
+export const hideModal = () => {
+    dropdown && (dropdown.style.visibility = 'hidden');
+}
+
+export const showModal = (button: any) => {
+  if (!dropdown || dropdown.style.visibility == 'visible' || modalInfo.isError) return;
+  // Get button's position on the screen
+  const rect = button.getBoundingClientRect();
+
+  // Calculate where to place the dropdown (below or above the button)
+  const dropdownWidth = dropdown.offsetWidth || dropdown.scrollWidth || dropdown.clientWidth;
+  const dropdownHeight = dropdown.offsetHeight || dropdown.scrollHeight || dropdown.clientHeight;
+  const viewportHeight = window.innerHeight;
+
+  // Check if there's enough space below the button
+  if (rect.bottom + dropdownHeight <= viewportHeight) {
+    // Place dropdown below the button
+    dropdown.style.top = (rect.bottom + 2) + 'px';
+  } else {
+    // Otherwise, place it above the button
+    dropdown.style.top = (rect.top - dropdownHeight - 2) + 'px';
+  }
+
+  // Position it horizontally aligned with the button
+  dropdown.style.left = (rect.left - dropdownWidth + rect.width) + 'px';
+
+  // Toggle visibility
+  dropdown.style.visibility = (dropdown.style.visibility === 'visible') ? 'hidden' : 'visible';
+}
+
+// document.body.addEventListener('click', (event: any) => {
+//     if(dropdown && !event.target.closest('#_ex_modal')) {
+//         dropdown.style.visibility = 'hidden';
+//     }
+// });

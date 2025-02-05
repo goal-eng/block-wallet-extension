@@ -1,11 +1,10 @@
-import { initializeButtonEvent } from "../main/modal";
+import { initializeButtonEvent } from "../main/check";
 
-initializeButtonEvent((event: any) => {
-  if (!event) return false;
-  if (event.target.classList.contains('js-buy-btn') || 
-    event.target.classList.contains('js-sell-btn') || 
-    event.target.closest('.js-buy-btn,.js-sell-btn')) {
-    return true;
+initializeButtonEvent((element: any) => {
+  if (!element || !element.classList) return null;
+  if (element.classList.contains('js-buy-btn') || 
+    element.classList.contains('js-sell-btn')) {
+    return element;
   }
-  return false;
+  return element.closest('.js-buy-btn,.js-sell-btn');
 });

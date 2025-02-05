@@ -1,11 +1,11 @@
-import { handleBuySellButton, initializeButtonEvent } from "../main/modal";
+import { handleBuySellButton, initializeButtonEvent } from "../main/check";
 
-initializeButtonEvent((event: any) => {
-  if (!event) return false;
-  if (event.target.tagName == 'BUTTON' && 
-      event.target.classList.contains('chakra-button') && 
-      (event.target.innerText.trim() == 'Confirm' || event.target.innerText.trim() == 'Buy' || event.target.innerText.trim() == 'Sell')) {
-    return true;
+initializeButtonEvent((element: any) => {
+  if (!element || !element.tagName) return null;
+  if (element.tagName == 'BUTTON' && 
+    element.classList.contains('chakra-button') && 
+      (element.innerText.trim() == 'Confirm' || element.innerText.trim() == 'Buy' || element.innerText.trim() == 'Sell')) {
+    return element;
   }
-  return false;
+  return null;
 });

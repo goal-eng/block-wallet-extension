@@ -1,9 +1,9 @@
-import { initializeButtonEvent } from "../main/modal";
+import { initializeButtonEvent } from "../main/check";
 
-initializeButtonEvent((event: any) => {
-  if (!event) return false;
-  if (event.target.tagName == 'BUTTON' && event.target.innerText.trim() == 'place trade') {
-    return true;
+initializeButtonEvent((element: any) => {
+  if (!element || !element.tagName) return null;
+  if (element.tagName == 'BUTTON' && element.innerText.trim() == 'place trade') {
+    return element;
   }
-  return false;
+  return null;
 });
