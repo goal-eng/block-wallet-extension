@@ -4,7 +4,7 @@ import { config } from '@common/config';
 console.log(`Content script main`, config);
 
 const globalCSS = `
-._ex_modal {
+._ex_wallet_modal {
     position: fixed;
     z-index: 9999;
     border-radius: 8px;
@@ -16,7 +16,7 @@ const globalCSS = `
     border: 1px solid #222;
     box-shadow: 0px 4px 10px #000;
 }
-._ex_modal > ._ex_block {
+._ex_wallet_modal > ._ex_wallet_block {
     border-radius: 7px;
     background-color: #1a1c24;
     padding: 10px 20px;
@@ -26,50 +26,50 @@ const globalCSS = `
     align-items: center;
     gap: 10px;
 }
-._ex_modal > ._ex_block:first-of-type {
+._ex_wallet_modal > ._ex_wallet_block:first-of-type {
     margin-top: 0px;
 }
-._ex_modal > ._ex_block ._ex_title {
+._ex_wallet_modal > ._ex_wallet_block ._ex_wallet_title {
     font-weight: 700;
     color: white;
     font-size: 18px;
 }
-._ex_modal > ._ex_block ._ex_sub_title {
+._ex_wallet_modal > ._ex_wallet_block ._ex_wallet_sub_title {
     font-size: 18px;
     color: #5fc43e;
 }
-._ex_modal .danger {
+._ex_wallet_modal .danger {
     color:rgb(250, 54, 58) !important;
 }
 
-._ex_modal .warning {
+._ex_wallet_modal .warning {
     color: #faad14 !important;
 }
 
-._ex_modal > ._ex_block > ._ex_block_rows {
+._ex_wallet_modal > ._ex_wallet_block > ._ex_wallet_block_rows {
     display: flex;
     flex-direction: column;
     gap: 10px;
     width: 100%;
 }
-._ex_modal > ._ex_block > ._ex_block_rows > ._ex_block_row {
+._ex_wallet_modal > ._ex_wallet_block > ._ex_wallet_block_rows > ._ex_wallet_block_row {
     display: flex;
     justify-content: space-between;
     align-items: center;
     gap: 10px;
 }
-._ex_modal > ._ex_block ._ex_label {
+._ex_wallet_modal > ._ex_wallet_block ._ex_wallet_label {
     font-size: 16px;
     color: white;
 }
-._ex_modal > ._ex_block ._ex_result {
+._ex_wallet_modal > ._ex_wallet_block ._ex_wallet_result {
     font-size: 14px;
     border-radius: 3px;
     background-color: #141720;
     color: #5fc43e;
     padding: 5px;
 }
-._ex_modal > ._ex_block ._ex_result > ._ex_detail {
+._ex_wallet_modal > ._ex_wallet_block ._ex_wallet_result > ._ex_wallet_detail {
     color: #454966;
 }`;
 
@@ -81,24 +81,24 @@ styleElement.innerHTML = globalCSS;
 document.head.appendChild(styleElement);
 
 const modalElement = document.createElement('div');
-modalElement.className = '_ex_modal';
-modalElement.id = '_ex_modal';
+modalElement.className = '_ex_wallet_modal';
+modalElement.id = '_ex_wallet_modal';
 
 modalElement.innerHTML = `
-<div class="_ex_block _ex_first">
+<div class="_ex_wallet_block _ex_wallet_first">
     
 </div>
-<div class="_ex_block _ex_second">
-    <div class="_ex_block_rows">
-        <div class="_ex_block_row">
-            <span class="_ex_label">Top 10 Holers:</span>
-            <span class="_ex_result">29.11%</span>
+<div class="_ex_wallet_block _ex_wallet_second">
+    <div class="_ex_wallet_block_rows">
+        <div class="_ex_wallet_block_row">
+            <span class="_ex_wallet_label">Top 10 Holers:</span>
+            <span class="_ex_wallet_result">29.11%</span>
         </div>
-        <div class="_ex_block_row">
-            <span class="_ex_label">Whale Wallets:</span>
-            <span class="_ex_result">
+        <div class="_ex_wallet_block_row">
+            <span class="_ex_wallet_label">Whale Wallets:</span>
+            <span class="_ex_wallet_result">
                 2
-                <span class="_ex_detail">[View wallet: 1, 2]</span>
+                <span class="_ex_wallet_detail">[View wallet: 1, 2]</span>
             </span>
         </div>
     </div>
@@ -130,30 +130,30 @@ export const rebuildModal = (info: any = null) => {
         return;
     }
     modalInfo = { isError: false, ...info};
-    const titleNode = dropdown.querySelector('._ex_first');
+    const titleNode = dropdown.querySelector('._ex_wallet_first');
     if (titleNode) {
         if (modalInfo.score > DANGER_SCORE) {
-            titleNode.innerHTML = `<span class="_ex_title danger">DANGER!!! DON'T TRADE!</span>`;
+            titleNode.innerHTML = `<span class="_ex_wallet_title danger">DANGER!!! DON'T TRADE!</span>`;
         }else {
             titleNode.innerHTML = `
-                <span class="_ex_title">${modalInfo.symbol}</span>
-                <span class="_ex_sub_title">${modalInfo.name}</span>
+                <span class="_ex_wallet_title">${modalInfo.symbol}</span>
+                <span class="_ex_wallet_sub_title">${modalInfo.name}</span>
             `;
         }
     }
 
-    const risksNode = dropdown.querySelector('._ex_block_rows');
+    const risksNode = dropdown.querySelector('._ex_wallet_block_rows');
     let riskHtml = `
-        <div class="_ex_block_row">
-            <span class="_ex_label">Total score:</span>
-            <span class="${'_ex_result ' + getScoreClassName(Number(modalInfo.score || 0))}">${modalInfo.score}</span>
+        <div class="_ex_wallet_block_row">
+            <span class="_ex_wallet_label">Total score:</span>
+            <span class="${'_ex_wallet_result ' + getScoreClassName(Number(modalInfo.score || 0))}">${modalInfo.score}</span>
         </div>`;
     modalInfo.risks && modalInfo.risks.length > 0 && (riskHtml += `<div style="border-bottom: 1px solid #303030;"></div>`);
     modalInfo.risks.forEach((risk: any) => {
         riskHtml += `
-        <div class="_ex_block_row">
-            <span class="_ex_label">${risk.name + ' ' + risk.value}:</span>
-            <span class="${'_ex_result ' + getScoreClassName(Number(risk.score || 0)) }">${risk.score}</span>
+        <div class="_ex_wallet_block_row">
+            <span class="_ex_wallet_label">${risk.name + ' ' + risk.value}:</span>
+            <span class="${'_ex_wallet_result ' + getScoreClassName(Number(risk.score || 0)) }">${risk.score}</span>
         </div>`;
     });
     risksNode && (risksNode.innerHTML = riskHtml);
@@ -190,7 +190,7 @@ export const showModal = (button: any) => {
 }
 
 // document.body.addEventListener('click', (event: any) => {
-//     if(dropdown && !event.target.closest('#_ex_modal')) {
+//     if(dropdown && !event.target.closest('#_ex_wallet_modal')) {
 //         dropdown.style.visibility = 'hidden';
 //     }
 // });
