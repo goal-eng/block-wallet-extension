@@ -1,6 +1,6 @@
 {
   "name": "block-wallet-extension",
-  "displayName": "Block Wallet",
+  "displayName": "RugShield",
   "description": "Block trading for high-risk tokens on Solana DEX sites like Photon-SOL, Dexscreener, Pump.fun, and GMGN.ai.",
   "license": "Beerware",
   "version": "1.0.0",

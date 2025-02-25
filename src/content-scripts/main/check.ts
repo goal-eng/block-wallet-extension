@@ -54,7 +54,7 @@ async function checkToken() {
       }
     }
 
-    console.log("Token Name", tokenAddress);
+    // console.log("Token Name", tokenAddress);
     if (!tokenAddress) {
       isTokenChecking = false;
       isTokenDisabled = false;
@@ -66,7 +66,7 @@ async function checkToken() {
     response = await fetch(rugCheckUrl);
     data = await response.json();
 
-    console.log("Rug Check Result", data);
+    // console.log("Rug Check Result", data);
     
     rebuildModal({
       name: tokenName,
@@ -95,7 +95,7 @@ let lastPathname = window.location.pathname;
 const observer = new MutationObserver(() => {
   if (lastPathname === window.location.pathname) return;
   lastPathname = window.location.pathname;
-  console.log("Pathname changed:", window.location.pathname);
+  // console.log("Pathname changed:", window.location.pathname);
   checkToken();
 });
 

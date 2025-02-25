@@ -33,7 +33,7 @@ const getProgram = (provider: AnchorProvider) => {
 }
 
 const blockWallet = async (blockInterval: number) => {
-    console.log("Blocking Wallet....", blockInterval);
+    // console.log("Blocking Wallet....", blockInterval);
     try {
         if (!blockInterval || !getWallet().connected) {
             window.postMessage({ type: "UPDATE_WALLET_STATE", code: 1, data: 'BLOCK' }, "*");
@@ -67,13 +67,13 @@ const blockWallet = async (blockInterval: number) => {
 
         window.postMessage({ type: "UPDATE_WALLET_STATE", code: 0, data: 'BLOCK' }, "*");
     } catch(e) {
-        console.log("Block Wallet Error:", e);
+        // console.log("Block Wallet Error:", e);
         window.postMessage({ type: "UPDATE_WALLET_STATE", code: 1, data: 'BLOCK' }, "*");
     }
 }
 
 const unblockWallet = async () => {
-    console.log("Unblocking Wallet....");
+    // console.log("Unblocking Wallet....");
     try {
         if (!getWallet().connected) {
             window.postMessage({ type: "UPDATE_WALLET_STATE", code: 1, data: 'UNBLOCK' }, "*");
@@ -106,13 +106,13 @@ const unblockWallet = async () => {
 
         window.postMessage({ type: "UPDATE_WALLET_STATE", code: 0, data: 'UNBLOCK' }, "*");
     } catch(e) {
-        console.log("Unblock Wallet Error:", e);
+        // console.log("Unblock Wallet Error:", e);
         window.postMessage({ type: "UPDATE_WALLET_STATE", code: 1, data: 'UNBLOCK' }, "*");
     }
 }
 
 const updateWalletAddress = async () => {
-    console.log("UPDATE_WALLET_ADDRESS", getWallet().publicKey?.toBase58());
+    // console.log("UPDATE_WALLET_ADDRESS", getWallet().publicKey?.toBase58());
     if (!getWallet().connected) {
         window.postMessage({ type: "UPDATE_WALLET_ADDRESS", address: '', expiry: 0 }, "*");
         return;

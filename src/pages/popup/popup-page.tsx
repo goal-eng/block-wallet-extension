@@ -11,7 +11,7 @@ const Switcher = () => {
   const [isChecked, setIsChecked] = useState(false);
 
   const handleCheckboxChange = () => {
-    console.log(isChecked);
+    // console.log(isChecked);
     setIsChecked(!isChecked)
   }
 
@@ -54,7 +54,7 @@ export function PopupPage(): JSX.Element {
     // });
 
     const updateWalletAddress = (message: any) => {
-      console.log("Popup Message", message);
+      // console.log("Popup Message", message);
       if (message.type === "UPDATE_WALLET_ADDRESS") {
         setBlockRemaining(0);
         setBlockState('pending');
@@ -74,7 +74,7 @@ export function PopupPage(): JSX.Element {
     };
     chrome.runtime.onMessage.addListener(updateWalletAddress);
     chrome.runtime.sendMessage({ type: "SEND_TO_PAGE_BACKGROUND", message: "REQUEST_WALLET_TYPE" }).then((response) => {
-      console.log("REQUEST_WALLET_TYPE", response);
+      // console.log("REQUEST_WALLET_TYPE", response);
       if (!response.success) return;
       handleWalletButton(response.wallet || 'phantom');
     }).catch((error) => {});
