@@ -5,6 +5,7 @@ import { config } from '@common/config';
 import { hostPermissions } from '@src/manifest/build-manifest';
 import { parseLamports, checkTabs, formatDecimals, getRemainingTimeString } from '@src/utils';
 import moment from 'moment';
+import { ICON_PHANTOM, ICON_SOLFLARE } from '@src/resources/wallet/utils';
 
 const Switcher = () => {
   const [isChecked, setIsChecked] = useState(false);
@@ -45,11 +46,12 @@ export function PopupPage(): JSX.Element {
   const [blockState, setBlockState] = useState<'blocked' | 'unblocked' | 'pending'>('pending');
   const [balance, setBalance] = useState<number>(0);
   const [balanceUSD, setBalanceUSD] = useState<number>(-1);
+  const [walletType, setWalletType] = useState<'phantom' | 'solflare' | null>(null);
 
   useEffect(() => {
-    chrome.tabs.query({ active: true, currentWindow: true }, (tabs: any) => {
-      setIsAvailable(checkTabs(tabs));
-    });
+    // chrome.tabs.query({ active: true, currentWindow: true }, (tabs: any) => {
+    //   setIsAvailable(checkTabs(tabs));
+    // });
 
     const updateWalletAddress = (message: any) => {
       console.log("Popup Message", message);
@@ -71,11 +73,22 @@ export function PopupPage(): JSX.Element {
       }
     };
     chrome.runtime.onMessage.addListener(updateWalletAddress);
-    chrome.runtime.sendMessage({ type: "SEND_TO_PAGE_BACKGROUND", message: "REQUEST_WALLET_ADDRESS" }).then((response) => {}).catch((error) => {});
+    chrome.runtime.sendMessage({ type: "SEND_TO_PAGE_BACKGROUND", message: "REQUEST_WALLET_TYPE" }).then((response) => {
+      console.log("REQUEST_WALLET_TYPE", response);
+      if (!response.success) return;
+      handleWalletButton(response.wallet || 'phantom');
+    }).catch((error) => {});
     return () => {
       chrome.runtime.onMessage.removeListener(updateWalletAddress)
     }
   }, []);
+
+  const handleWalletButton = (type: 'phantom' | 'solflare') => {
+    setWalletType(type);
+    chrome.runtime.sendMessage({ type: "SEND_TO_PAGE_BACKGROUND", message: "UPDATE_WALLET_TYPE", wallet: type }).then((response) => {
+      chrome.runtime.sendMessage({ type: "SEND_TO_PAGE_BACKGROUND", message: "REQUEST_WALLET_ADDRESS" }).then((response) => {}).catch((error) => {});
+    }).catch((error) => {});
+  }
 
   useEffect(() => {
     fetch(`https://api.coingecko.com/api/v3/simple/price?ids=solana&vs_currencies=usd`)
@@ -133,6 +146,12 @@ export function PopupPage(): JSX.Element {
             <img src={logo} alt="Logo" className="w-7 h-7 inline-block mr-2" />
             Block Wallet
           </p>
+          <button style={{padding: '6px' }} className={`mr-2 border rounded-full ${walletType == 'phantom' ? 'border-primary' : 'border-graydark'}`} onClick={() => handleWalletButton('phantom')}>
+            <img src={ICON_PHANTOM} alt="Logo" className="w-4 h-4 " />
+          </button>
+          <button style={{padding: '6px' }} className={`mr-2 border rounded-full ${walletType == 'solflare' ? 'border-primary' : 'border-graydark'}`} onClick={() => handleWalletButton('solflare')}>
+            <img src={ICON_SOLFLARE} alt="Logo" className="w-4 h-4 " />
+          </button>
           <button
             disabled={isLoading || !isAvailable}
             onClick={address ? handleDisconnect : handleConnect}

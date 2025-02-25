@@ -1,15 +1,29 @@
-import { config } from '@common/config';
-import { hostPermissions } from '@src/manifest/build-manifest';
 import { Connection, clusterApiUrl, PublicKey } from "@solana/web3.js";
+
 import { BlockWallet } from "./idl/block_wallet";
 import BlockWalletIDL from "./idl/block_wallet.json";
 import { AnchorProvider, BN, Program } from "@coral-xyz/anchor";
-import { Wallet } from './wallet/phantom';
 import { Buffer } from 'buffer';
 import { PhantomWalletAdapter } from '@solana/wallet-adapter-wallets';
-import { WalletReadyState } from '@solana/wallet-adapter-base';
+import { WalletAdapterNetwork, WalletReadyState } from '@solana/wallet-adapter-base';
+import { SolflareWalletAdapter } from './wallet/solflare';
+import { Wallet } from './wallet/utils';
 
-let wallet = new PhantomWalletAdapter();
+let _CONFIG = {
+    wallet: 'phantom'   // 'solflare'
+};
+
+// let wallet = new PhantomWalletAdapter();
+let _WALLETS: {
+    [key: string]: Wallet
+} = {
+    'phantom': new PhantomWalletAdapter(),
+    'solflare': new SolflareWalletAdapter({ network: WalletAdapterNetwork.Devnet })
+};
+
+const getWallet = (): Wallet => {
+    return _WALLETS[_CONFIG.wallet || 'phantom'];
+}
 
 const _SOLANA_CONNECTION = new Connection(clusterApiUrl("devnet"));
 const _FEE_ACCOUNT = new PublicKey("FwLFdJeGwx7UUAQReU4tx94KA4KZjyp4eX8kdWf4yyG8");
@@ -21,11 +35,11 @@ const getProgram = (provider: AnchorProvider) => {
 const blockWallet = async (blockInterval: number) => {
     console.log("Blocking Wallet....", blockInterval);
     try {
-        if (!blockInterval || !wallet.connected) {
+        if (!blockInterval || !getWallet().connected) {
             window.postMessage({ type: "UPDATE_WALLET_STATE", code: 1, data: 'BLOCK' }, "*");
             return;
         }
-        const provider = new AnchorProvider(_SOLANA_CONNECTION, wallet as any, AnchorProvider.defaultOptions());
+        const provider = new AnchorProvider(_SOLANA_CONNECTION, getWallet() as any, AnchorProvider.defaultOptions());
         const program = getProgram(provider);
         const [walletPDA] = PublicKey.findProgramAddressSync(
             [Buffer.from("wallet"), provider.wallet.publicKey.toBuffer()],
@@ -61,11 +75,11 @@ const blockWallet = async (blockInterval: number) => {
 const unblockWallet = async () => {
     console.log("Unblocking Wallet....");
     try {
-        if (!wallet.connected) {
+        if (!getWallet().connected) {
             window.postMessage({ type: "UPDATE_WALLET_STATE", code: 1, data: 'UNBLOCK' }, "*");
             return;
         }
-        const provider = new AnchorProvider(_SOLANA_CONNECTION, wallet as any, AnchorProvider.defaultOptions());
+        const provider = new AnchorProvider(_SOLANA_CONNECTION, getWallet() as any, AnchorProvider.defaultOptions());
         const program = getProgram(provider);
         const [walletPDA] = PublicKey.findProgramAddressSync(
             [Buffer.from("wallet"), provider.wallet.publicKey.toBuffer()],
@@ -98,13 +112,13 @@ const unblockWallet = async () => {
 }
 
 const updateWalletAddress = async () => {
-    console.log("UPDATE_WALLET_ADDRESS", wallet.publicKey?.toBase58());
-    if (!wallet.connected) {
+    console.log("UPDATE_WALLET_ADDRESS", getWallet().publicKey?.toBase58());
+    if (!getWallet().connected) {
         window.postMessage({ type: "UPDATE_WALLET_ADDRESS", address: '', expiry: 0 }, "*");
         return;
     }
     try {
-        const provider = new AnchorProvider(_SOLANA_CONNECTION, wallet as any, AnchorProvider.defaultOptions());
+        const provider = new AnchorProvider(_SOLANA_CONNECTION, getWallet() as any, AnchorProvider.defaultOptions());
         const program = getProgram(provider);
         const [walletPDA] = PublicKey.findProgramAddressSync(
             [Buffer.from("wallet"), provider.wallet.publicKey.toBuffer()],
@@ -117,13 +131,13 @@ const updateWalletAddress = async () => {
         } catch (e) {
         }
         const balance = await _SOLANA_CONNECTION.getBalance(provider.wallet.publicKey);
-        window.postMessage({ type: "UPDATE_WALLET_ADDRESS", address: wallet.publicKey?.toBase58(), expiry: expiry, balance: balance }, "*");
+        window.postMessage({ type: "UPDATE_WALLET_ADDRESS", address: getWallet().publicKey?.toBase58(), expiry: expiry, balance: balance }, "*");
     } catch (e) {
-        window.postMessage({ type: "UPDATE_WALLET_ADDRESS", address: wallet.publicKey?.toBase58(), expiry: 0 }, "*");
+        window.postMessage({ type: "UPDATE_WALLET_ADDRESS", address: getWallet().publicKey?.toBase58(), expiry: 0 }, "*");
     }
 }
 
-if (wallet.readyState == WalletReadyState.Installed) {
+if (getWallet().readyState == WalletReadyState.Installed) {
     // Listen for wallet address change
     // wallet.on("accountChanged", (newPublicKey: string) => {
     //     console.log("Public Key Changed!!!!", newPublicKey);
@@ -134,18 +148,24 @@ if (wallet.readyState == WalletReadyState.Installed) {
 
 window.addEventListener("message", async (event) => {
     if (event.data.type === "FROM_BLOCK_WALLET") {
-        if (wallet) {
+        if (event.data.data.wallet) {
+            _CONFIG.wallet = event.data.data.wallet;
+        }
+        if (getWallet()) {
             switch (event.data.message) {
             case 'DISCONNECT_WALLET':
-                await wallet.disconnect();
+                await getWallet().disconnect();
                 updateWalletAddress();
                 break;
             case 'CONNECT_WALLET':
-                if (wallet.connected) {
+                if (getWallet().connected) {
                     // Send wallet address to background script
                     updateWalletAddress();
                 }else {
-                    await wallet.connect();
+                    try {
+                        await getWallet().connect();
+                    } catch {
+                    }
                     updateWalletAddress();
                 }
                 break;
@@ -165,8 +185,13 @@ window.addEventListener("message", async (event) => {
 
 const initialize = async () => {
     try {
-        await wallet.connect();
-        await updateWalletAddress();
+        // await wallet.connect();
+        // await updateWalletAddress();
+        if (window.trustedTypes && window.trustedTypes.createPolicy) {
+            window.trustedTypes.createPolicy('default', {
+                createHTML: (string, sink) => string
+            });
+        }
     } catch {
     }
 };

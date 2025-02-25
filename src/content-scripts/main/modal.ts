@@ -136,7 +136,7 @@ export const rebuildModal = (info: any = null) => {
             titleNode.innerHTML = `<span class="_ex_wallet_title danger">DANGER!!! DON'T TRADE!</span>`;
         }else {
             titleNode.innerHTML = `
-                <span class="_ex_wallet_title">${modalInfo.symbol}</span>
+                <span class="_ex_wallet_title">$${modalInfo.symbol}</span>
                 <span class="_ex_wallet_sub_title">${modalInfo.name}</span>
             `;
         }
@@ -148,14 +148,16 @@ export const rebuildModal = (info: any = null) => {
             <span class="_ex_wallet_label">Total score:</span>
             <span class="${'_ex_wallet_result ' + getScoreClassName(Number(modalInfo.score || 0))}">${modalInfo.score}</span>
         </div>`;
-    modalInfo.risks && modalInfo.risks.length > 0 && (riskHtml += `<div style="border-bottom: 1px solid #303030;"></div>`);
-    modalInfo.risks.forEach((risk: any) => {
-        riskHtml += `
-        <div class="_ex_wallet_block_row">
-            <span class="_ex_wallet_label">${risk.name + ' ' + risk.value}:</span>
-            <span class="${'_ex_wallet_result ' + getScoreClassName(Number(risk.score || 0)) }">${risk.score}</span>
-        </div>`;
-    });
+    if (info.blocked) {
+        modalInfo.risks && modalInfo.risks.length > 0 && (riskHtml += `<div style="border-bottom: 1px solid #303030;"></div>`);
+        modalInfo.risks.forEach((risk: any) => {
+            riskHtml += `
+            <div class="_ex_wallet_block_row">
+                <span class="_ex_wallet_label">${risk.name + ' ' + risk.value}:</span>
+                <span class="${'_ex_wallet_result ' + getScoreClassName(Number(risk.score || 0)) }">${risk.score}</span>
+            </div>`;
+        });
+    }
     risksNode && (risksNode.innerHTML = riskHtml);
 }
 

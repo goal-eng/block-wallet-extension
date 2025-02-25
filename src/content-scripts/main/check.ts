@@ -72,7 +72,8 @@ async function checkToken() {
       name: tokenName,
       symbol: tokenSymbol,
       score: Number(data.score || 0),
-      risks: data.risks || []
+      risks: data.risks || [],
+      blocked: Number(blockExpiry || 0) > new Date().getTime()
     });
 
     if (data.score && Number(data.score) >= RISK_SCORE) {
@@ -126,9 +127,7 @@ export const initializeButtonEvent = (getButton: any): void => {
     const button = getButton(event.target);
     if (button) {
       mouseEnteredCount++;
-      if (Number(blockExpiry || 0) > new Date().getTime()) {
-        showModal(button);
-      }
+      showModal(button);
     }
   }, true);
 

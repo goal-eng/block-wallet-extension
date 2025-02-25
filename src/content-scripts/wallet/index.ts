@@ -23,13 +23,16 @@ window.postMessage({ type: "FROM_BLOCK_WALLET", message: "REQUEST_WALLET_ADDRESS
 window.addEventListener("message", (event) => {
     if (event.source !== window) return;
     
-    switch (event.data.type) {
-        case "UPDATE_WALLET_ADDRESS":
-        case "UPDATE_WALLET_STATE":
-            // Send the Phantom Wallet address to the background script
-            chrome.runtime.sendMessage(event.data);
-            break;
-        default:
-            break;
+    try {
+        switch (event.data.type) {
+            case "UPDATE_WALLET_ADDRESS":
+            case "UPDATE_WALLET_STATE":
+                // Send the Phantom Wallet address to the background script
+                chrome.runtime.sendMessage(event.data);
+                break;
+            default:
+                break;
+        }
+    } catch {
     }
 });

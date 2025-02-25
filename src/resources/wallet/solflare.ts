@@ -1,65 +1,38 @@
-import type {
-    Connection,
-    SendOptions,
-    Transaction,
-    TransactionSignature,
-    TransactionVersion,
-    VersionedTransaction,
-} from '@solana/web3.js';
-import { PublicKey } from '@solana/web3.js';
-import { ICON_PHANTOM, isVersionedTransaction, PhantomWallet, PhantomWalletAdapterConfig, scopePollingDetectionStrategy, SendTransactionOptions, Wallet, WalletReadyState } from './utils';
+import { Connection, PublicKey, SendOptions, Transaction, TransactionSignature, TransactionVersion, VersionedTransaction } from '@solana/web3.js';
+import { ICON_SOLFLARE, isIosAndRedirectable, isVersionedTransaction, PhantomWallet, PhantomWalletAdapterConfig, scopePollingDetectionStrategy, SendTransactionOptions, SolflareWallet, SolflareWalletAdapterConfig, Wallet, WalletReadyState } from './utils';
+import Solflare from '@solflare-wallet/sdk';
 
-export function isIosAndRedirectable() {
-    // SSR: return false
-    if (!navigator) return false;
-
-    const userAgent = navigator.userAgent.toLowerCase();
-
-    // if on iOS the user agent will contain either iPhone or iPad
-    // caveat: if requesting desktop site then this won't work
-    const isIos = userAgent.includes('iphone') || userAgent.includes('ipad');
-
-    // if in a webview then it will not include Safari
-    // note that other iOS browsers also include Safari
-    // so we will redirect only if Safari is also included
-    const isSafari = userAgent.includes('safari');
-
-    return isIos && isSafari;
-}
-
-export class PhantomWalletAdapter implements Wallet {
-    name = 'Phantom';
-    url = 'https://phantom.app';
-    icon = ICON_PHANTOM;
+export class SolflareWalletAdapter implements Wallet {
+    name = 'Solflare';
+    url = 'https://solflare.com';
+    icon = ICON_SOLFLARE;
     supportedTransactionVersions: ReadonlySet<TransactionVersion> = new Set(['legacy', 0]);
 
-    private _callbacks: any = {};
     private _connecting: boolean;
-    private _wallet: PhantomWallet | null;
+    private _wallet: Solflare | null;
     private _publicKey: PublicKey | null;
+    private _config: SolflareWalletAdapterConfig;
     private _readyState: WalletReadyState =
         typeof window === 'undefined' || typeof document === 'undefined'
             ? WalletReadyState.Unsupported
-            : WalletReadyState.NotDetected;
+            : WalletReadyState.Loadable;
 
-    constructor(config: PhantomWalletAdapterConfig = {}) {
+    constructor(config: SolflareWalletAdapterConfig = {}) {
         this._connecting = false;
-        this._wallet = null;
         this._publicKey = null;
+        this._wallet = null;
+        this._config = config;
 
         if (this._readyState !== WalletReadyState.Unsupported) {
-            if (isIosAndRedirectable()) {
-                // when in iOS (not webview), set Phantom as loadable instead of checking for install
-                this._readyState = WalletReadyState.Loadable;
-            } else {
-                scopePollingDetectionStrategy(() => {
-                    if (window.phantom?.solana?.isPhantom || window.solana?.isPhantom) {
-                        this._readyState = WalletReadyState.Installed;
-                        return true;
-                    }
-                    return false;
-                });
-            }
+            scopePollingDetectionStrategy(() => {
+                if (window.solflare?.isSolflare || window.SolflareApp) {
+                    this._readyState = WalletReadyState.Installed;
+                    // this.emit('readyStateChange', this._readyState);
+                    return true;
+                }
+                return false;
+            });
+            // detectAndRegisterSolflareMetaMaskWallet();
         }
     }
 
@@ -71,18 +44,18 @@ export class PhantomWalletAdapter implements Wallet {
         return this._connecting;
     }
 
-    get readyState() {
-        return this._readyState;
-    }
-
     get connected() {
         return !!this.publicKey;
     }
 
+    get readyState() {
+        return this._readyState;
+    }
+
     async autoConnect(): Promise<void> {
-        // Skip autoconnect in the Loadable state
+        // Skip autoconnect in the Loadable state on iOS
         // We can't redirect to a universal link without user input
-        if (this.readyState === WalletReadyState.Installed) {
+        if (!(this.readyState === WalletReadyState.Loadable && isIosAndRedirectable())) {
             await this.connect();
         }
     }
@@ -90,37 +63,57 @@ export class PhantomWalletAdapter implements Wallet {
     async connect(): Promise<void> {
         try {
             if (this.connected || this.connecting) return;
-
-            if (this.readyState === WalletReadyState.Loadable) {
-                // redirect to the Phantom /browse universal link
-                // this will open the current URL in the Phantom in-wallet browser
-                const url = encodeURIComponent(window.location.href);
-                const ref = encodeURIComponent(window.location.origin);
-                window.location.href = `https://phantom.app/ul/browse/${url}?ref=${ref}`;
+            if (this._readyState !== WalletReadyState.Loadable && this._readyState !== WalletReadyState.Installed) {
+                // throw new WalletNotReadyError();
                 return;
             }
 
-            if (this.readyState !== WalletReadyState.Installed) return;
+            // redirect to the Solflare /browse universal link
+            // this will open the current URL in the Solflare in-wallet browser
+            if (this.readyState === WalletReadyState.Loadable && isIosAndRedirectable()) {
+                const url = encodeURIComponent(window.location.href);
+                const ref = encodeURIComponent(window.location.origin);
+                window.location.href = `https://solflare.com/ul/v1/browse/${url}?ref=${ref}`;
+                return;
+            }
+
+            let SolflareClass: typeof Solflare;
+            try {
+                SolflareClass = (await import('@solflare-wallet/sdk')).default;
+            } catch (error: any) {
+                return;
+                // throw new WalletLoadError(error?.message, error);
+            }
+
+            let wallet: Solflare;
+            try {
+                wallet = new SolflareClass({ network: this._config.network });
+            } catch (error: any) {
+                // throw new WalletConfigError(error?.message, error);
+                return;
+            }
 
             this._connecting = true;
 
-            // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-            const wallet = window.phantom?.solana || window.solana!;
-
-            if (!wallet.isConnected) {
+            if (!wallet.connected) {
                 try {
                     await wallet.connect();
                 } catch (error: any) {
+                    // throw new WalletConnectionError(error?.message, error);
                     return;
                 }
             }
 
-            if (!wallet.publicKey) return;
+            if (!wallet.publicKey) {
+                // throw new WalletConnectionError();
+                return;
+            }
 
             let publicKey: PublicKey;
             try {
                 publicKey = new PublicKey(wallet.publicKey.toBytes());
             } catch (error: any) {
+                // throw new WalletPublicKeyError(error?.message, error);
                 return;
             }
 
@@ -130,7 +123,9 @@ export class PhantomWalletAdapter implements Wallet {
             this._wallet = wallet;
             this._publicKey = publicKey;
 
+            // this.emit('connect', publicKey);
         } catch (error: any) {
+            // this.emit('error', error);
             throw error;
         } finally {
             this._connecting = false;
@@ -140,14 +135,20 @@ export class PhantomWalletAdapter implements Wallet {
     async disconnect(): Promise<void> {
         const wallet = this._wallet;
         if (wallet) {
+            wallet.off('disconnect', this._disconnected);
+            wallet.off('accountChanged', this._accountChanged);
+
             this._wallet = null;
             this._publicKey = null;
 
             try {
                 await wallet.disconnect();
             } catch (error: any) {
+                // this.emit('error', new WalletDisconnectionError(error?.message, error));
             }
         }
+
+        // this.emit('disconnect');
     }
 
     protected async prepareTransaction(
@@ -170,13 +171,12 @@ export class PhantomWalletAdapter implements Wallet {
 
         return transaction;
     }
-
+    
     async sendTransaction<T extends Transaction | VersionedTransaction>(
         transaction: T,
         connection: Connection,
         options: SendTransactionOptions = {}
     ): Promise<TransactionSignature> {
-        console.log("Options", options);
         try {
             const wallet = this._wallet;
             if (!wallet) throw new Error();
@@ -193,12 +193,14 @@ export class PhantomWalletAdapter implements Wallet {
 
                 sendOptions.preflightCommitment = sendOptions.preflightCommitment || connection.commitment;
 
-                const { signature } = await wallet.signAndSendTransaction(transaction, sendOptions);
-                return signature;
+                return await wallet.signAndSendTransaction(transaction, sendOptions);
             } catch (error: any) {
                 throw error;
+                // if (error instanceof WalletError) throw error;
+                // throw new WalletSendTransactionError(error?.message, error);
             }
         } catch (error: any) {
+            // this.emit('error', error);
             throw error;
         }
     }
@@ -206,14 +208,19 @@ export class PhantomWalletAdapter implements Wallet {
     async signTransaction<T extends Transaction | VersionedTransaction>(transaction: T): Promise<T> {
         try {
             const wallet = this._wallet;
-            if (!wallet) throw new Error();
+            if (!wallet) {
+                throw new Error();
+                // throw new WalletNotConnectedError();
+            }
 
             try {
-                return (await wallet.signTransaction(transaction)) || transaction;
+                return ((await wallet.signTransaction(transaction)) as T) || transaction;
             } catch (error: any) {
                 throw new Error(error?.message, error);
+                // throw new WalletSignTransactionError(error?.message, error);
             }
         } catch (error: any) {
+            // this.emit('error', error);
             throw error;
         }
     }
@@ -221,14 +228,19 @@ export class PhantomWalletAdapter implements Wallet {
     async signAllTransactions<T extends Transaction | VersionedTransaction>(transactions: T[]): Promise<T[]> {
         try {
             const wallet = this._wallet;
-            if (!wallet) throw new Error();
+            if (!wallet) {
+                throw new Error();
+                // throw new WalletNotConnectedError();
+            }
 
             try {
-                return (await wallet.signAllTransactions(transactions)) || transactions;
+                return ((await wallet.signAllTransactions(transactions)) as T[]) || transactions;
             } catch (error: any) {
                 throw new Error(error?.message, error);
+                // throw new WalletSignTransactionError(error?.message, error);
             }
         } catch (error: any) {
+            // this.emit('error', error);
             throw error;
         }
     }
@@ -236,15 +248,19 @@ export class PhantomWalletAdapter implements Wallet {
     async signMessage(message: Uint8Array): Promise<Uint8Array> {
         try {
             const wallet = this._wallet;
-            if (!wallet) throw new Error();
+            if (!wallet) {
+                throw new Error();
+                // throw new WalletNotConnectedError();
+            }
 
             try {
-                const { signature } = await wallet.signMessage(message);
-                return signature;
+                return await wallet.signMessage(message, 'utf8');
             } catch (error: any) {
                 throw new Error(error?.message, error);
+                // throw new WalletSignMessageError(error?.message, error);
             }
         } catch (error: any) {
+            // this.emit('error', error);
             throw error;
         }
     }
@@ -252,29 +268,32 @@ export class PhantomWalletAdapter implements Wallet {
     private _disconnected = () => {
         const wallet = this._wallet;
         if (wallet) {
+            wallet.off('disconnect', this._disconnected);
+
             this._wallet = null;
             this._publicKey = null;
+
+            // this.emit('error', new WalletDisconnectedError());
+            // this.emit('disconnect');
         }
     };
 
-    private _accountChanged = (newPublicKey: PublicKey) => {
-        console.log("Account Changed", this._publicKey, newPublicKey);
+    private _accountChanged = (newPublicKey?: PublicKey) => {
+        if (!newPublicKey) return;
+
         const publicKey = this._publicKey;
         if (!publicKey) return;
 
         try {
             newPublicKey = new PublicKey(newPublicKey.toBytes());
         } catch (error: any) {
+            // this.emit('error', new WalletPublicKeyError(error?.message, error));
             return;
         }
 
         if (publicKey.equals(newPublicKey)) return;
 
         this._publicKey = newPublicKey;
-        this._callbacks['publicKeyChanged'] && this._callbacks['publicKeyChanged'](newPublicKey);
+        // this.emit('connect', newPublicKey);
     };
-
-    public on(event: string, callback: any) {
-        this._callbacks[event] = callback;
-    }
 }

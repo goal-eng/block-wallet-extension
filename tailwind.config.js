@@ -37,7 +37,7 @@ export default {
           2: "#F7F9FC",
           3: "#FAFAFA",
         },
-        graydark: "#303030",
+        graydark: "#333",
         whiten: "#a9a9a9",
         boxdark: "#254124",
         meta: {
@@ -77,6 +77,7 @@ export default {
         md: '8px',
         lg: '16px',
         xl: '24px',
+        "1.5": "0.375rem",
         2.5: "0.625rem",
         4.5: "1.125rem",
         5.5: "1.375rem",
