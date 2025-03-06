@@ -44,11 +44,11 @@ export function buildManifestV2(
     };
   }
 
-  if (pages.options) {
-    manifest.options_ui = {
-      page: pages.options,
-    };
-  }
+  // if (pages.options) {
+  //   manifest.options_ui = {
+  //     page: pages.options,
+  //   };
+  // }
 
   if (pages.popup) {
     manifest.browser_action = {

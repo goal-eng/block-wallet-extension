@@ -1,6 +1,5 @@
 import { initialize } from 'esbuild';
-import './index.css';
-import { hideModal, rebuildModal, showModal } from './modal';
+import { hideModal, rebuildModal, showModal, showModalDetails } from './modal';
 
 let isTokenDisabled = false;
 let isTokenChecking = false;
@@ -8,6 +7,9 @@ let blockExpiry = 0;
 const RISK_SCORE = 5000;
 
 // Event delegation for dynamically added buttons
+setInterval(() => {
+  showModalDetails(Number(blockExpiry || 0) > new Date().getTime());
+}, 1000);
 
 window.addEventListener("message", (event) => {
   if (event.source !== window) return;
@@ -62,26 +64,39 @@ async function checkToken() {
       return;
     }
 
-    const rugCheckUrl = `https://api.rugcheck.xyz/v1/tokens/${tokenAddress}/report/summary`;
-    response = await fetch(rugCheckUrl);
-    data = await response.json();
+    chrome.runtime.sendMessage(
+      { type: "FETCH_DATA", url: `https://api.rugcheck.xyz/v1/tokens/${tokenAddress}/report/summary` },
+      (response) => {
+        if (response.success) {
+          const data = response.data;
+          rebuildModal({
+            name: tokenName,  
+            symbol: tokenSymbol,
+            score: Number(data.score || 0),
+            risks: data.risks || [],
+          });
+      
+          if (data.score && Number(data.score) >= RISK_SCORE) {
+            isTokenDisabled = true;
+          }
+
+          console.log("Fetched Data:", response.data);
+        } else {
+          console.error("Error:", response.error);
+        }
+      }
+    );
+
+    // const rugCheckUrl = `https://api.rugcheck.xyz/v1/tokens/${tokenAddress}/report/summary`;
+    // response = await fetch(rugCheckUrl);
+    // data = await response.json();
 
     // console.log("Rug Check Result", data);
     
-    rebuildModal({
-      name: tokenName,
-      symbol: tokenSymbol,
-      score: Number(data.score || 0),
-      risks: data.risks || [],
-      blocked: Number(blockExpiry || 0) > new Date().getTime()
-    });
-
-    if (data.score && Number(data.score) >= RISK_SCORE) {
-      isTokenDisabled = true;
-    }
+    
   } catch (error) {
     rebuildModal();
-    console.error("Error fetching data:", error);
+    // console.error("Error fetching data:", error);
     isTokenDisabled = false;
   }
 

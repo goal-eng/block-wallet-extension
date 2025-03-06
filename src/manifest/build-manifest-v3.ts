@@ -23,13 +23,20 @@ export function buildManifestV3(
       '128': '/public/icon-128.png',
     },
     permissions: [
-      'storage',
-      'tabs',
+      "storage",
+      "tabs",
+      "offscreen", 
+      "unlimitedStorage", 
+      "idle",
+      // "declarativeNetRequest"
     ],
+    offline_enabled: true,
+    optional_permissions: [ "bookmarks", "sessions", "topSites", "favicon", "scripting", "alarms", "notifications", "tabGroups", "search" ],
     host_permissions: hostPermissions,
     content_scripts: contentScripts,
     action: {},
     web_accessible_resources: [{
+      all_frames: true,
       matches: ["<all_urls>"],
       resources: pages.popup ? [pages.popup, ...resources] : resources,
     }]

@@ -8,6 +8,8 @@ import { PublicKey } from '@solana/web3.js';
 
 declare global {
     interface Window {
+        globalThis: Window;
+        rugshield?: any;
         phantom?: any;
         solana?: any;
         solflare?: {

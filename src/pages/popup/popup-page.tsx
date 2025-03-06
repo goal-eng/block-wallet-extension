@@ -45,24 +45,35 @@ export function PopupPage(): JSX.Element {
   const [blockRemaining, setBlockRemaining] = useState<number>(0);
   const [blockState, setBlockState] = useState<'blocked' | 'unblocked' | 'pending'>('pending');
   const [balance, setBalance] = useState<number>(0);
-  const [balanceUSD, setBalanceUSD] = useState<number>(-1);
   const [walletType, setWalletType] = useState<'phantom' | 'solflare' | null>(null);
+  const [lastUpdateTimestamp, setLastUpdateTimestamp] = useState<number>(0);
+  const [solPrice, setSolPrice] = useState<number>(-1);
 
   useEffect(() => {
-    // chrome.tabs.query({ active: true, currentWindow: true }, (tabs: any) => {
+    // chrome.tabs.query({ active: true }, (tabs: any) => {
     //   setIsAvailable(checkTabs(tabs));
     // });
+    fetch(`https://api.coingecko.com/api/v3/simple/price?ids=solana&vs_currencies=usd`)
+    .then((response) => response.json())
+    .then((data) => {
+      setSolPrice(data.solana.usd);
+    })
+    .catch((error) => {
+      setSolPrice(-1);
+      // console.error(error);
+    });
 
     const updateWalletAddress = (message: any) => {
       // console.log("Popup Message", message);
       if (message.type === "UPDATE_WALLET_ADDRESS") {
+        const expiry = message.expiry || 0;
         setBlockRemaining(0);
-        setBlockState('pending');
-        setBalanceUSD(-1);
+        setBlockState(expiry ? 'pending' : 'unblocked');
         setAddress(message.address || '');
-        setBlockExpiry(message.expiry || 0);
+        setBlockExpiry(expiry);
         setBalance(message.balance || 0);
         setIsLoading(false);
+        setLastUpdateTimestamp(new Date().getTime());
       }
       else if (message.type === "UPDATE_WALLET_STATE") {
         if (message.code == 0) {
@@ -91,18 +102,7 @@ export function PopupPage(): JSX.Element {
   }
 
   useEffect(() => {
-    fetch(`https://api.coingecko.com/api/v3/simple/price?ids=solana&vs_currencies=usd`)
-      .then((response) => response.json())
-      .then((data) => {
-        setBalanceUSD(data.solana.usd * parseLamports(balance));
-      })
-      .catch((error) => {
-        setBalanceUSD(-1);
-        // console.error(error);
-      });
-  }, [balance]);
-
-  useEffect(() => {
+    // console.log("Block Expiry Changed", blockExpiry);
     const interval = setInterval(() => {
       if (blockExpiry > new Date().getTime()) {
         setBlockRemaining(blockExpiry - new Date().getTime());
@@ -116,7 +116,7 @@ export function PopupPage(): JSX.Element {
     return () => {
       interval && clearInterval(interval);
     };
-  }, [blockExpiry]);
+  }, [blockExpiry, lastUpdateTimestamp]);
 
   const handleConnect = () => {
     setIsLoading(true);
@@ -130,7 +130,7 @@ export function PopupPage(): JSX.Element {
 
   const handleBlockWallet = async () => {
     setIsLoading(true);
-    chrome.runtime.sendMessage({ type: "SEND_TO_PAGE_BACKGROUND", message: "BLOCK_WALLET", data: blockInterval }).then((response) => {}).catch((error) => {});
+    chrome.runtime.sendMessage({ type: "SEND_TO_PAGE_BACKGROUND", message: "BLOCK_WALLET", data: {interval: blockInterval} }).then((response) => {}).catch((error) => {});
   }
 
   const handleUnblockWallet = async () => {
@@ -235,7 +235,7 @@ export function PopupPage(): JSX.Element {
           </div>
           <div className='flex items-center py-2'>
             <p className='text-left text-whiten'>USD Balance:</p>
-            <p className='grow text-right text-white'>{ balanceUSD >= 0 ? formatDecimals(balanceUSD) + ' USD' : 'Calculating...' }</p>
+            <p className='grow text-right text-white'>{ solPrice >= 0 && balance >= 0 ? formatDecimals(solPrice * parseLamports(balance)) + ' USD' : 'Calculating...' }</p>
           </div>
         </div>
         <div className={`absolute w-full h-full left-0 top-0 pt-10 flex items-center justify-center ${isAvailable ? 'hidden' : ''}`}>

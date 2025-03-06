@@ -12,11 +12,15 @@ const callback = (mutationsList: any) => {
     if (mutation.type === 'childList') {
       // Loop through added nodes
       mutation.addedNodes.forEach((node: any) => {
+        console.log(node.nodeType, node.tagName, node.classList);
         if (node.nodeType === Node.ELEMENT_NODE && node.tagName === 'DIV') {
           // Check if the added node is the desired div
-          if (node.classList.contains('sBVBv2HePq7qYTpGDmRM') && node.classList.contains('VTmpJ0jdbJuSJQ4HKGlN')) {
-            // Create a button and append to the new div
+          if (node.classList.contains('c-trades-table__tr')) {
             addButton(node);
+          }
+          else if (node.classList.contains('c-trades-table__td') && node.querySelector("img.Ws2jNiIpXgXxTik0lFtO")) {
+            // Create a button and append to the new div
+            addButton(node.closest(".c-trades-table__tr"));
           }
         }
       });
@@ -34,22 +38,22 @@ const addButton = (div: any) => {
   if (!div || !div.querySelector) return;
   const analyzeBtn = div.querySelector('._ex_btn_analyze');
   if(analyzeBtn) return;
-  const wrapperDiv = div.querySelector('.CZ9XtNP_BJSquWvM6_r8');
+  const wrapperDiv = div.querySelector('.l-row.l-row-gap--xxs');
   if (!wrapperDiv) return;
   // Create a button element
   const button = document.createElement("button");
   button.innerHTML = "R";
   button.className = "_ex_btn_analyze circle WONu4jRBwJmFo3FD6XwP c-btn c-btn--lt u-px-xs";
-  button.style.marginRight = '5px';
+  button.style.margin = "auto";
 
   // Append the button to the child div
-  wrapperDiv.prepend(button);
-  addButtonEventListener(button, div.querySelector('.kZ551pEiiCmBLd2UhVP_'));
+  wrapperDiv.append(button);
+  addButtonEventListener(button, div);
 }
 
 const initialize = () => {
   // Find the target div
-  const targetDivs = document.querySelectorAll(".dbIzlq2D2W9wqE6dpwdZ"); // Replace with your selector
+  const targetDivs = document.querySelectorAll(".c-grid-table__body"); // Replace with your selector
   if (!targetDivs.length) {
     setTimeout(initialize, 1000);
     return;
@@ -57,8 +61,7 @@ const initialize = () => {
   setTimeout(() => {
     targetDivs.forEach((targetDiv: any) => {
       // Find all child divs within the target div
-      const childDivs = targetDiv.querySelectorAll("div.sBVBv2HePq7qYTpGDmRM.VTmpJ0jdbJuSJQ4HKGlN");
-    
+      const childDivs = targetDiv.querySelectorAll(".c-trades-table__tr");
       // Iterate through each child div and add a button
       childDivs.forEach((childDiv: any) => {
         addButton(childDiv);

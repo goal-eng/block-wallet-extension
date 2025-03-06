@@ -1,7 +1,4 @@
-import './index.css';
-import { config } from '@common/config';
-
-console.log(`Content script main`, config);
+import { getLevel, getScore, getScoreClassName } from "../util";
 
 const globalCSS = `
 ._ex_wallet_modal {
@@ -11,7 +8,6 @@ const globalCSS = `
     background-color: #151419;
     padding: 16px;
     font-size: 16px;
-    max-width: 400px;
     visibility: hidden;
     border: 1px solid #222;
     box-shadow: 0px 4px 10px #000;
@@ -26,15 +22,15 @@ const globalCSS = `
     align-items: center;
     gap: 10px;
 }
-._ex_wallet_modal > ._ex_wallet_block:first-of-type {
+._ex_wallet_block:first-of-type {
     margin-top: 0px;
 }
-._ex_wallet_modal > ._ex_wallet_block ._ex_wallet_title {
+._ex_wallet_title {
     font-weight: 700;
     color: white;
     font-size: 18px;
 }
-._ex_wallet_modal > ._ex_wallet_block ._ex_wallet_sub_title {
+._ex_wallet_sub_title {
     font-size: 18px;
     color: #5fc43e;
 }
@@ -46,30 +42,46 @@ const globalCSS = `
     color: #faad14 !important;
 }
 
-._ex_wallet_modal > ._ex_wallet_block > ._ex_wallet_block_rows {
+._ex_wallet_modal .badge, ._ex_modal .badge {
+    font-size: 14px;
+    background-color:rgb(57, 165, 21) !important;
+    color: white !important;
+}
+
+._ex_wallet_modal .badge-danger, ._ex_modal .badge-danger {
+    background-color:rgb(216, 17, 20) !important;
+    color: white !important;
+}
+
+._ex_wallet_modal .badge-warning, ._ex_modal .badge-warning {
+    background-color:rgb(204, 142, 17) !important;
+    color: white !important;
+}
+
+._ex_wallet_block_rows {
     display: flex;
     flex-direction: column;
     gap: 10px;
     width: 100%;
 }
-._ex_wallet_modal > ._ex_wallet_block > ._ex_wallet_block_rows > ._ex_wallet_block_row {
+._ex_wallet_block_row {
     display: flex;
     justify-content: space-between;
     align-items: center;
     gap: 10px;
 }
-._ex_wallet_modal > ._ex_wallet_block ._ex_wallet_label {
+._ex_wallet_label {
     font-size: 16px;
     color: white;
 }
-._ex_wallet_modal > ._ex_wallet_block ._ex_wallet_result {
+._ex_wallet_result {
     font-size: 14px;
     border-radius: 3px;
     background-color: #141720;
     color: #5fc43e;
     padding: 5px;
 }
-._ex_wallet_modal > ._ex_wallet_block ._ex_wallet_result > ._ex_wallet_detail {
+._ex_wallet_result > ._ex_wallet_detail {
     color: #454966;
 }`;
 
@@ -117,12 +129,8 @@ let modalInfo = {
     risks: []
 };
 
-export const DANGER_SCORE = 5000;
-export const WARNING_SCORE = 1000;
+let isProMode = false;
 
-export const getScoreClassName = (score: number) => {
-    return score > DANGER_SCORE ? 'danger' : (score > WARNING_SCORE ? 'warning' : '');
-}
 
 export const rebuildModal = (info: any = null) => {
     if (!info || info.isError) {
@@ -132,7 +140,7 @@ export const rebuildModal = (info: any = null) => {
     modalInfo = { isError: false, ...info};
     const titleNode = dropdown.querySelector('._ex_wallet_first');
     if (titleNode) {
-        if (modalInfo.score > DANGER_SCORE) {
+        if (isProMode && getScoreClassName(modalInfo.score) == 'danger') {
             titleNode.innerHTML = `<span class="_ex_wallet_title danger">DANGER!!! DON'T TRADE!</span>`;
         }else {
             titleNode.innerHTML = `
@@ -146,19 +154,25 @@ export const rebuildModal = (info: any = null) => {
     let riskHtml = `
         <div class="_ex_wallet_block_row">
             <span class="_ex_wallet_label">Total score:</span>
-            <span class="${'_ex_wallet_result ' + getScoreClassName(Number(modalInfo.score || 0))}">${modalInfo.score}</span>
+            <span class="${'_ex_wallet_result ' + getScoreClassName(Number(modalInfo.score || 0))}">${getScore(modalInfo.score)} / 100</span>
         </div>`;
-    if (info.blocked) {
-        modalInfo.risks && modalInfo.risks.length > 0 && (riskHtml += `<div style="border-bottom: 1px solid #303030;"></div>`);
+    if (isProMode) {
+        modalInfo.risks && modalInfo.risks.length > 0 && (riskHtml += `<div class="_ex_pro" style="border-bottom: 1px solid #303030;"></div>`);
         modalInfo.risks.forEach((risk: any) => {
             riskHtml += `
-            <div class="_ex_wallet_block_row">
+            <div class="_ex_wallet_block_row _ex_pro">
                 <span class="_ex_wallet_label">${risk.name + ' ' + risk.value}:</span>
-                <span class="${'_ex_wallet_result ' + getScoreClassName(Number(risk.score || 0)) }">${risk.score}</span>
+                <span class="${'_ex_wallet_result badge badge-' + getLevel(risk.level) }" style="text-transform: uppercase;">${getLevel(risk.level)}</span>
             </div>`;
         });
     }
     risksNode && (risksNode.innerHTML = riskHtml);
+}
+
+export const showModalDetails = (isShow: boolean) => {
+    if (isProMode == isShow) return;
+    isProMode = isShow;
+    rebuildModal(modalInfo);
 }
 
 export const hideModal = () => {

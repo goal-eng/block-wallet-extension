@@ -1,11 +1,14 @@
 import { config } from '@common/config';
 import { checkTabs } from '../utils';
+import { PhantomWalletAdapter, SolflareWalletAdapter } from '@solana/wallet-adapter-wallets';
+import { WalletAdapterNetwork, WalletReadyState } from '@solana/wallet-adapter-base';
+import { Wallet } from '@src/resources/wallet/utils';
 
 const updateWalletAddress = (response: any) => {
-  console.log("Update Wallet Address", response);
+  // console.log("Update Wallet Address", response);
   const address = response?.address || '';
   chrome.storage.local.get("walletAddress", (data) => {
-    console.log("Get Wallet Address", data, address);
+    // console.log("Get Wallet Address", data, address);
     if (address !== data.walletAddress) {
       chrome.storage.local.set({ walletAddress: address });
     }
@@ -19,12 +22,12 @@ const getWalletType = async () => {
 
 const addWalletTypeToData = async (data: any = {}) => {
   if (!data) data = {};
-  if (!data.walletType) data.wallet = await getWalletType();
+  if (!data.wallet) data.wallet = await getWalletType();
   return data;
 }
 
 const updateWalletType = async (response: any) => {
-  console.log("Update Wallet Type", response);
+  // console.log("Update Wallet Type", response);
   const wallet = response?.wallet || '';
   const walletType = await getWalletType();
   if (walletType != wallet) {
@@ -33,16 +36,26 @@ const updateWalletType = async (response: any) => {
 }
 
 const requestWalletAddress = async() => {
-  chrome.tabs.query({ active: true, currentWindow: true }, async (tabs: any) => {
+  chrome.tabs.query({ active: true }, async (tabs: any) => {
     if (!checkTabs(tabs)) return;
-    console.log("Request Wallet Address", tabs);
+    // console.log("Request Wallet Address", tabs);
     chrome.tabs.sendMessage(tabs[0].id, { type: "SEND_TO_PAGE_CONTENT", message: "REQUEST_WALLET_ADDRESS", data: await addWalletTypeToData() }).catch((error) => {});
   });
 }
 
 chrome.storage.local.onChanged.addListener((changes) => {
-  console.log('Storage changed', changes);
+  // console.log('Storage changed', changes);
 })
+
+chrome.tabs.onCreated.addListener((tab) => {
+
+  if (tab.url === "chrome-newtab://") {
+
+      chrome.tabs.update({ url: "https://www.google.com" });
+
+  }
+
+});
 
 chrome.tabs.onActivated.addListener(() => {
   requestWalletAddress();
@@ -60,7 +73,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         sendResponse({ success: true });
       }else {
         // Forward the message to the active tab
-        chrome.tabs.query({ active: true, currentWindow: true }, async (tabs: any) => {
+        chrome.tabs.query({ active: true }, async (tabs: any) => {
           if (checkTabs(tabs)) {
             console.log("Send to Page Content", tabs[0].id, message.message, message.data);
             chrome.tabs.sendMessage(tabs[0].id, { type: "SEND_TO_PAGE_CONTENT", message: message.message, data: await addWalletTypeToData(message.data) }).catch((error) => {});
@@ -73,5 +86,39 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     updateWalletAddress(message);
     sendResponse({ success: true });
   }
+  else if (message.type == "FETCH_DATA") {
+    console.log(message);
+    fetch(message.url, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+      },
+    })
+      .then((response) => response.text())
+      .then((data) => sendResponse({ success: true, data }))
+      .catch((error) => sendResponse({ success: false, error: error.message }));
+
+    return true; // Required for asynchronous `sendResponse`
+  }
   return true;
 });
+
+// chrome.declarativeNetRequest.updateDynamicRules({
+//   addRules: [
+//     {
+//       id: 1,
+//       priority: 1,
+//       action: {
+//         type: chrome.declarativeNetRequest.RuleActionType.MODIFY_HEADERS,
+//         responseHeaders: [
+//           { header: "access-control-allow-origin", operation: chrome.declarativeNetRequest.HeaderOperation.SET, value: "*" }
+//         ]
+//       },
+//       condition: {
+//         urlFilter: "*://example.com/*",
+//         resourceTypes: [chrome.declarativeNetRequest.ResourceType.XMLHTTPREQUEST]
+//       }
+//     }
+//   ],
+//   removeRuleIds: [1]
+// });

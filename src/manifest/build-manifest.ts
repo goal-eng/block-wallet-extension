@@ -13,6 +13,7 @@ export function buildManifest(version: number, config: ManifestConfig) {
       ...getConfig({ hostPermissions }),
       js: config.content[name].js,
       css: config.content[name].css,
+      all_frames: true,
     }));
 
   switch (version) {

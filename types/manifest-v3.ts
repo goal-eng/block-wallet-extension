@@ -176,12 +176,14 @@ interface DeclarativeNetRequestResource {
 }
 
 interface WebAccessibleResourceByMatch {
+  all_frames?: boolean;
   matches: string[];
   resources: string[];
   use_dynamic_url?: boolean;
 }
 
 interface WebAccessibleResourceById {
+  all_frames?: boolean;
   extension_ids: string[];
   resources: string[];
   use_dynamic_url?: boolean;
