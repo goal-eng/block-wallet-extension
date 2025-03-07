@@ -23,16 +23,22 @@ export function buildManifestV3(
       '128': '/public/icon-128.png',
     },
     permissions: [
-      "storage",
-      "tabs",
-      "offscreen", 
-      "unlimitedStorage", 
-      "idle",
-      // "declarativeNetRequest"
+      "storage", "activeTab", "tabs", "alarms", "unlimitedStorage"
     ],
+    content_security_policy: {
+      "extension_pages": "script-src 'self' 'wasm-unsafe-eval'; object-src 'none'; worker-src 'self'"
+    },
     offline_enabled: true,
-    optional_permissions: [ "bookmarks", "sessions", "topSites", "favicon", "scripting", "alarms", "notifications", "tabGroups", "search" ],
-    host_permissions: hostPermissions,
+    optional_host_permissions: [ "file:///*", "*://*/*" ],
+    optional_permissions: [
+      "bookmarks",
+      "sessions",
+      "topSites",
+      "favicon",
+      "notifications",
+      "tabGroups",
+      "search"
+    ],
     content_scripts: contentScripts,
     action: {},
     web_accessible_resources: [{

@@ -1,24 +1,18 @@
 import { config } from '@common/config';
 
-function getTopWindow() {
-    let currentWindow: Window = window;
-    while (currentWindow.parent !== currentWindow) {
-        currentWindow = currentWindow.parent;
-    }
-    return currentWindow;
-}
+let firstLoaded = false;
 
-const topWindow = getTopWindow();
-
-if (topWindow == window.self) {
-
+if (!firstLoaded) {
+    firstLoaded = true;
     // Inject a script into the webpage
     const script = document.createElement("script");
+    script.setAttribute("async","false");
     script.src = chrome.runtime.getURL("resources/inject.js"); // Load from extension files
     script.type = "module"; // Use module to avoid conflicts
-    document.documentElement.appendChild(script);
-    script.remove(); // Clean up after execution
-    
+    const e = (document.head || document.documentElement);
+    e.insertBefore(script, e.children[0]);
+    e.removeChild(script);
+
     chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         // console.log("Content Scripts Message", message);
     

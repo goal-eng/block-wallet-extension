@@ -115,6 +115,7 @@ export interface ManifestV3 {
   omnibox?: {
     keyword: string;
   };
+  optional_host_permissions?: string[]
   optional_permissions?:
     | chrome.runtime.ManifestPermissions[]
     | string[]

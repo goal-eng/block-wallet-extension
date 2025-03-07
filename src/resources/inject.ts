@@ -8,21 +8,15 @@ import { PhantomWalletAdapter, SolflareWalletAdapter } from '@solana/wallet-adap
 import { WalletAdapterNetwork, WalletReadyState } from '@solana/wallet-adapter-base';
 import { Wallet } from './wallet/utils';
 
-function getTopWindow() {
-    let currentWindow: Window = window;
-    while (currentWindow.parent !== currentWindow) {
-        currentWindow = currentWindow.parent;
-    }
-    return currentWindow;
-}
+let firstLoaded = false;
+console.log("RugShield Injected");
 
-const topWindow = getTopWindow();
-
-if (topWindow == window.self) {
+if (!firstLoaded) {
+    firstLoaded = true;
     // console.log("Block Wallet Injected", topWindow.rugshield);
-    if (!topWindow.rugshield) topWindow.rugshield = {};
+    if (!window.rugshield) window.rugshield = {};
     // topWindow.rugshield.injected = true;
-    const rugshield = topWindow.rugshield;
+    const rugshield = window.rugshield;
     
     rugshield.config = {
         wallet: 'phantom'   // 'solflare'
@@ -125,7 +119,7 @@ if (topWindow == window.self) {
     }
     
     rugshield.updateWalletAddress = async () => {
-        // console.log("UPDATE_WALLET_ADDRESS", getWallet().publicKey?.toBase58());
+        // console.log("UPDATE_WALLET_ADDRESS", rugshield.getWallet().publicKey?.toBase58());
         if (!rugshield.getWallet().connected) {
             window.postMessage({ type: "UPDATE_WALLET_ADDRESS", address: '', expiry: 0 }, "*");
             return;
@@ -152,8 +146,8 @@ if (topWindow == window.self) {
     }
 
     rugshield.handleMessageCallback = async (event: MessageEvent<any>) => {
+        // console.log("Message", event.data);
         if (event.data.type === "FROM_BLOCK_WALLET") {
-            // console.log("Message", event.data);
             if (event.data.data.wallet) {
                 rugshield.config.wallet = event.data.data.wallet;
             }
@@ -190,19 +184,18 @@ if (topWindow == window.self) {
     }
 
     window.addEventListener("message", rugshield.handleMessageCallback);
-}
-
-const initialize = async () => {
-    try {
-        // await wallet.connect();
-        // await updateWalletAddress();
-        if (window.trustedTypes && window.trustedTypes.createPolicy) {
-            window.trustedTypes.createPolicy('default', {
-                createHTML: (string, sink) => string
-            });
+    const initialize = async () => {
+        try {
+            // await wallet.connect();
+            rugshield.updateWalletAddress();
+            if (window.trustedTypes && window.trustedTypes.createPolicy) {
+                window.trustedTypes.createPolicy('default', {
+                    createHTML: (string, sink) => string
+                });
+            }
+        } catch {
         }
-    } catch {
-    }
-};
-
-initialize();
+    };
+    
+    initialize();
+}

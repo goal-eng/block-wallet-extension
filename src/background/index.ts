@@ -62,7 +62,7 @@ chrome.tabs.onActivated.addListener(() => {
 });
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-  console.log("Background Message", message);
+  // console.log("Background Message", message);
   if (message.type === "SEND_TO_PAGE_BACKGROUND") {
     (async () => {
       if (message.message == 'REQUEST_WALLET_TYPE') {
@@ -87,7 +87,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     sendResponse({ success: true });
   }
   else if (message.type == "FETCH_DATA") {
-    console.log(message);
+    // console.log(message);
     fetch(message.url, {
       method: "GET",
       headers: {

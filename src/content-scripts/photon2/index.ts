@@ -13,12 +13,12 @@ const callback = (mutationsList: any) => {
       // Loop through added nodes
       mutation.addedNodes.forEach((node: any) => {
         console.log(node.nodeType, node.tagName, node.classList);
-        if (node.nodeType === Node.ELEMENT_NODE && node.tagName === 'DIV') {
+        if (node.nodeType === Node.ELEMENT_NODE) {
           // Check if the added node is the desired div
-          if (node.classList.contains('c-trades-table__tr')) {
+          if (node.tagName === 'A' && node.classList.contains('c-trades-table__tr')) {
             addButton(node);
           }
-          else if (node.classList.contains('c-trades-table__td') && node.querySelector("img.Ws2jNiIpXgXxTik0lFtO")) {
+          else if (node.tagName === 'DIV' && node.classList.contains('c-trades-table__td') && node.querySelector("img.Ws2jNiIpXgXxTik0lFtO")) {
             // Create a button and append to the new div
             addButton(node.closest(".c-trades-table__tr"));
           }

@@ -272,6 +272,7 @@ let isProMode = true;
 let modalInfo: any = null;
 
 let blockExpiry = 0;
+let lastTimestamp = 0;
 
 const setProMode = (_isProMode: boolean) => {
     if (isProMode == _isProMode) return;
@@ -400,19 +401,35 @@ const initCheckList = () => {
 
 initCheckList();
 
+const checkTokenLoop = async (url: string, timestamp: number, retryCount: number) => {
+    if (lastTimestamp != timestamp || retryCount <= 0) {
+        rebuildModal();
+        return;
+    }
+    checkToken(url).then((data: any) => {
+        if (lastTimestamp != timestamp) {
+            rebuildModal();
+            return;
+        }
+        if (!data || !data.address) {
+            setTimeout(() => {
+                checkTokenLoop(url, timestamp, retryCount - 1);
+            }, 3000);
+            return;
+        }
+        rebuildModal(data);
+    });
+}
+
 const handleClick = (button: any, link: any) => {
+    
     if (link && link.href) {
         showModal(button);
         setTimeout(() => {
             if (dropdown.style.visibility != 'hidden') {
                 showLoading();
-                checkToken(link.href).then((data: any) => {
-                    if (!data || !data.address) {
-                        rebuildModal();
-                        return;
-                    }
-                    rebuildModal(data);
-                });
+                lastTimestamp = Date.now();
+                checkTokenLoop(link.href, lastTimestamp, 10);
             }
         }, 0);
     }
@@ -454,7 +471,7 @@ const rebuildModal = async (info: any = null) => {
     if (titleNode) {
         if (!info) {
             isError = true;
-            titleNode.innerHTML = `<span class="_ex_title warning">Load Failed. Retry in 5s.</span>`;
+            titleNode.innerHTML = `<span class="_ex_title warning">Loading...</span>`;
             updateScore(-1);
         }else {
             isError = false;
@@ -520,6 +537,7 @@ const hideModel = () => {
     if (!dropdown || !detailPage) return;
     showDetailPage(false);
     dropdown.style.visibility = 'hidden';
+    lastTimestamp = 0;
 }
 
 document.body.addEventListener('click', (event: any) => {

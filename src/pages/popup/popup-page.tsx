@@ -53,10 +53,10 @@ export function PopupPage(): JSX.Element {
     // chrome.tabs.query({ active: true }, (tabs: any) => {
     //   setIsAvailable(checkTabs(tabs));
     // });
-    fetch(`https://api.coingecko.com/api/v3/simple/price?ids=solana&vs_currencies=usd`)
+    fetch(`https://api.jup.ag/price/v2?ids=So11111111111111111111111111111111111111112`)
     .then((response) => response.json())
     .then((data) => {
-      setSolPrice(data.solana.usd);
+      setSolPrice(data?.data['So11111111111111111111111111111111111111112']?.price);
     })
     .catch((error) => {
       setSolPrice(-1);
