@@ -5,7 +5,7 @@ import { config } from '@common/config';
 import { hostPermissions } from '@src/manifest/build-manifest';
 import { parseLamports, checkTabs, formatDecimals, getRemainingTimeString } from '@src/utils';
 import moment from 'moment';
-import { ICON_PHANTOM, ICON_SOLFLARE } from '@src/resources/wallet/utils';
+import { ICON_PHANTOM, ICON_SOLFLARE } from '@src/common/solana/wallet/utils';
 
 const Switcher = () => {
   const [isChecked, setIsChecked] = useState(false);
@@ -43,7 +43,7 @@ export function PopupPage(): JSX.Element {
   const [blockInterval, setBlockInterval] = useState<number>(24);
   const [blockExpiry, setBlockExpiry] = useState<number>(0);
   const [blockRemaining, setBlockRemaining] = useState<number>(0);
-  const [blockState, setBlockState] = useState<'blocked' | 'unblocked' | 'pending'>('pending');
+  const [blockState, setBlockState] = useState<'blocked' | 'unblocked' | 'pending' | 'blocking' | 'unblocking'>('pending');
   const [balance, setBalance] = useState<number>(0);
   const [walletType, setWalletType] = useState<'phantom' | 'solflare' | null>(null);
   const [lastUpdateTimestamp, setLastUpdateTimestamp] = useState<number>(0);
@@ -103,6 +103,7 @@ export function PopupPage(): JSX.Element {
 
   useEffect(() => {
     // console.log("Block Expiry Changed", blockExpiry);
+    if (isLoading) return;
     const interval = setInterval(() => {
       if (blockExpiry > new Date().getTime()) {
         setBlockRemaining(blockExpiry - new Date().getTime());
@@ -116,7 +117,7 @@ export function PopupPage(): JSX.Element {
     return () => {
       interval && clearInterval(interval);
     };
-  }, [blockExpiry, lastUpdateTimestamp]);
+  }, [isLoading, blockExpiry, lastUpdateTimestamp]);
 
   const handleConnect = () => {
     setIsLoading(true);
@@ -130,11 +131,13 @@ export function PopupPage(): JSX.Element {
 
   const handleBlockWallet = async () => {
     setIsLoading(true);
+    setBlockState('blocking');
     chrome.runtime.sendMessage({ type: "SEND_TO_PAGE_BACKGROUND", message: "BLOCK_WALLET", data: {interval: blockInterval} }).then((response) => {}).catch((error) => {});
   }
 
   const handleUnblockWallet = async () => {
     setIsLoading(true);
+    setBlockState('unblocking');
     chrome.runtime.sendMessage({ type: "SEND_TO_PAGE_BACKGROUND", message: "UNBLOCK_WALLET" }).then((response) => {}).catch((error) => {});
   }
 
@@ -144,7 +147,7 @@ export function PopupPage(): JSX.Element {
         <div className='flex py-3 px-6 items-center border-b-2 border-gray'>
           <p className='flex items-center text-whiten grow text-xl text-left text-gray'>
             <img src={logo} alt="Logo" className="w-7 h-7 inline-block mr-2" />
-            Block Wallet
+            RugShield
           </p>
           <button style={{padding: '6px' }} className={`mr-2 border rounded-full ${walletType == 'phantom' ? 'border-primary' : 'border-graydark'}`} onClick={() => handleWalletButton('phantom')}>
             <img src={ICON_PHANTOM} alt="Logo" className="w-4 h-4 " />
@@ -162,80 +165,85 @@ export function PopupPage(): JSX.Element {
               }
           </button>
         </div>
-        <div className={`m-4 p-4 bg-bodydark1 border-none rounded-md ${isAvailable ? '' : 'forbidden'}`}>
-          <p className="text-gray-400 text-sm text-left py-2">
-            To <b>block a wallet</b>, you need to pay 0.05 SOL fee and to <b>unblock a wallet before expiration</b>, you need to pay 0.25 SOL fee.
-          </p>
-          <div className='flex items-center py-2'>
-            <p className='text-left text-whiten'>Block Interval:</p>
-            <div className='grow text-right'>
-              <select 
-                className="py-2 px-4 rounded-md min-w-[180px] " 
-                value={blockInterval} 
-                onChange={(e) => setBlockInterval(parseInt(e.target.value))}
-                disabled={blockState !== 'unblocked' || balance < BLOCK_FEE_LAMPORTS || isLoading}>
-                <option value="24">24 hours</option>
-                <option value="168">7 days</option>
-                <option value="720">1 month</option>
-              </select>
+        <div className='p-4 space-y-4'>
+          <div className={`p-4 bg-bodydark1 border-none rounded-md ${isAvailable ? '' : 'forbidden'}`}>
+            <p className="text-gray-400 text-sm text-left">
+            Shield your wallet from impulsive risks: lock it for just <b>0.05 SOL</b> to help keep you on track and avoid losses. 
+            We're here to help, but you can always unlock your wallet for a discouraging fee of <b>0.25 SOL</b>.
+            </p>
+            <div className='flex items-center py-2'>
+              <p className='text-left text-whiten'>Block Interval:</p>
+              <div className='grow text-right'>
+                <select 
+                  className="py-2 px-4 rounded-md min-w-[180px] " 
+                  value={blockInterval} 
+                  onChange={(e) => setBlockInterval(parseInt(e.target.value))}
+                  disabled={blockState !== 'unblocked' || balance < BLOCK_FEE_LAMPORTS || isLoading}>
+                  <option value="24">24 hours</option>
+                  <option value="168">7 days</option>
+                  <option value="720">1 month</option>
+                </select>
+              </div>
+            </div>
+            <div className='flex items-center py-2'>
+              <button className='w-full button' disabled={blockState !== 'unblocked' || balance < BLOCK_FEE_LAMPORTS || isLoading} onClick={handleBlockWallet}>Block Wallet</button>
+            </div>
+            <div className='flex items-center py-2'>
+              <button className='w-full button-outline' disabled={blockState !== 'blocked' || balance < UNBLOCK_FEE_LAMPORTS || isLoading} onClick={handleUnblockWallet}>Unblock Wallet</button>
             </div>
           </div>
-          <div className='flex items-center py-2'>
-            <button className='w-full button' disabled={blockState !== 'unblocked' || balance < BLOCK_FEE_LAMPORTS || isLoading} onClick={handleBlockWallet}>Block Wallet</button>
-          </div>
-          <div className='flex items-center py-2'>
-            <button className='w-full button-outline' disabled={blockState !== 'blocked' || balance < UNBLOCK_FEE_LAMPORTS || isLoading} onClick={handleUnblockWallet}>Unblock Wallet</button>
-          </div>
-        </div>
-        <div className={`m-4 p-4 bg-bodydark1 border-none rounded-md ${isAvailable ? '' : 'forbidden'}`}>
-          <div className='flex items-center py-2'>
-            <p className='text-left text-whiten'>Blocked Status:</p>
-            <p className='grow text-right text-white'>
-              {
-                blockState == 'pending' || isLoading ? (
-                  <span className="">Checking</span>
-                ) :
-                blockExpiry > new Date().getTime() ? (
-                  <span className="text-red font-semibold">Blocked</span>
-                ) : (
-                  <span className="text-green font-semibold">Unblocked</span>
-                )
-              }
-            </p>
-          </div>
-          <div className='flex items-center py-2'>
-            <p className='text-left text-whiten'>Blocked Time:</p>
-            <p className='grow text-right text-white'>
-            {
-              !isLoading && blockState == 'blocked' && blockExpiry > new Date().getTime() ? (
-                <span className="">{moment(blockExpiry).format('YYYY-MM-DD HH:mm:ss')}</span>
-              ) : (
-                <span className="">---</span>
-              )
-            }
-            </p>
-          </div>
-          {
-            !isLoading && blockState == 'blocked' && blockRemaining > 0 && <div className='flex items-center py-2'>
-              <p className='text-left text-whiten'>Remaining:</p>
+          <div className={`p-4 bg-bodydark1 border-none rounded-md ${isAvailable ? '' : 'forbidden'}`}>
+            <div className='flex items-center py-2'>
+              <p className='text-left text-whiten'>Blocked Status:</p>
               <p className='grow text-right text-white'>
                 {
-                  blockRemaining > 0 ? (
-                      <span className="">{getRemainingTimeString(blockRemaining)}</span>
-                  ) : 'Expired'
+                  blockState == 'blocking' ? <span className="">Blocking</span>
+                  : blockState == 'unblocking' ? <span className="">Unblocking</span>
+                  : (blockState == 'pending' || isLoading) ? (
+                    <span className="">Checking</span>
+                  ) : 
+                  blockExpiry > new Date().getTime() ? (
+                    <span className="text-red font-semibold">Blocked</span>
+                  ) : (
+                    <span className="text-green font-semibold">Unblocked</span>
+                  )
                 }
               </p>
             </div>
-          }
-          
-          <div className='border border-b-1 border-bodydark my-2'></div>
-          <div className='flex items-center py-2'>
-            <p className='text-left text-whiten'>SOL Balance:</p>
-            <p className='grow text-right text-white'>{ formatDecimals(parseLamports(balance)) } SOL</p>
-          </div>
-          <div className='flex items-center py-2'>
-            <p className='text-left text-whiten'>USD Balance:</p>
-            <p className='grow text-right text-white'>{ solPrice >= 0 && balance >= 0 ? formatDecimals(solPrice * parseLamports(balance)) + ' USD' : 'Calculating...' }</p>
+            <div className='flex items-center py-2'>
+              <p className='text-left text-whiten'>Blocked Time:</p>
+              <p className='grow text-right text-white'>
+              {
+                !isLoading && blockState == 'blocked' && blockExpiry > new Date().getTime() ? (
+                  <span className="">{moment(blockExpiry).format('YYYY-MM-DD HH:mm:ss')}</span>
+                ) : (
+                  <span className="">---</span>
+                )
+              }
+              </p>
+            </div>
+            {
+              !isLoading && blockState == 'blocked' && blockRemaining > 0 && <div className='flex items-center py-2'>
+                <p className='text-left text-whiten'>Remaining:</p>
+                <p className='grow text-right text-white'>
+                  {
+                    blockRemaining > 0 ? (
+                        <span className="">{getRemainingTimeString(blockRemaining)}</span>
+                    ) : 'Expired'
+                  }
+                </p>
+              </div>
+            }
+            
+            <div className='border border-b-1 border-bodydark my-2'></div>
+            <div className='flex items-center py-2'>
+              <p className='text-left text-whiten'>SOL Balance:</p>
+              <p className='grow text-right text-white'>{ formatDecimals(parseLamports(balance)) } SOL</p>
+            </div>
+            <div className='flex items-center py-2'>
+              <p className='text-left text-whiten'>USD Balance:</p>
+              <p className='grow text-right text-white'>{ solPrice >= 0 && balance >= 0 ? formatDecimals(solPrice * parseLamports(balance)) + ' USD' : 'Calculating...' }</p>
+            </div>
           </div>
         </div>
         <div className={`absolute w-full h-full left-0 top-0 pt-10 flex items-center justify-center ${isAvailable ? 'hidden' : ''}`}>

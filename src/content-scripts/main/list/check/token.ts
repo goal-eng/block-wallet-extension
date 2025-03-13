@@ -32,7 +32,7 @@ export async function checkToken(pathname: string): Promise<any> {
       }
     }
 
-    console.log("Token Name", tokenAddress);
+    // console.log("Token Name", tokenAddress);
     if (!tokenAddress) {
       return null;
     }

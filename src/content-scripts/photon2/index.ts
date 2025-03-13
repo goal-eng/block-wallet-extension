@@ -12,7 +12,7 @@ const callback = (mutationsList: any) => {
     if (mutation.type === 'childList') {
       // Loop through added nodes
       mutation.addedNodes.forEach((node: any) => {
-        console.log(node.nodeType, node.tagName, node.classList);
+        // console.log(node.nodeType, node.tagName, node.classList);
         if (node.nodeType === Node.ELEMENT_NODE) {
           // Check if the added node is the desired div
           if (node.tagName === 'A' && node.classList.contains('c-trades-table__tr')) {

@@ -21,7 +21,7 @@ const callback = (mutationsList: any) => {
     if (mutation.type === 'childList') {
       // Loop through added nodes
       mutation.addedNodes.forEach((node: any) => {
-        console.log(node.nodeType, node.tagName, node.className);
+        // console.log(node.nodeType, node.tagName, node.className);
         if (node.nodeType === Node.ELEMENT_NODE && node.tagName === 'DIV') {
           // Check if the added node is the desired div
           if (node.classList.contains('relative') && node.classList.contains('group')) {
@@ -48,7 +48,7 @@ observer.observe(targetNode, config_observe);
 const addButton = (div: any) => {
   if (!div || !div.querySelector) return;
   const link = div.firstChild;
-  link && console.log(link.tagName, link.className);
+  // link && console.log(link.tagName, link.className);
   if (!link || link.tagName != 'A' || !link.href || link.href.indexOf('/coin/') == -1) return;
   const wrapperDiv = div.querySelector('.gap-1.grid.h-fit');
   if (!wrapperDiv) return;

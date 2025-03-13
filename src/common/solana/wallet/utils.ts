@@ -4,7 +4,7 @@ import type {
     TransactionSignature,
     VersionedTransaction,
 } from '@solana/web3.js';
-import { PublicKey } from '@solana/web3.js';
+import { clusterApiUrl, Connection, PublicKey } from '@solana/web3.js';
 
 declare global {
     interface Window {
@@ -12,6 +12,7 @@ declare global {
         rugshield?: any;
         phantom?: any;
         solana?: any;
+        blockExpiry?: number;
         solflare?: {
             isSolflare?: boolean;
         };
@@ -21,6 +22,9 @@ declare global {
         };
     }
 }
+
+export const _SOLANA_CONNECTION = new Connection(clusterApiUrl("devnet"));
+export const _FEE_ACCOUNT = new PublicKey("FwLFdJeGwx7UUAQReU4tx94KA4KZjyp4eX8kdWf4yyG8");
 
 interface PhantomWalletEvents {
     connect(...args: unknown[]): unknown;

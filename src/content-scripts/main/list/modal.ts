@@ -148,6 +148,7 @@ const globalCSS = `
 ._ex_modal > ._ex_block ._ex_result {
     display: flex;
     justify-content: space-between;
+    gap: 10px;
     align-items: center;
     margin-top: 5px;
 }
@@ -271,7 +272,7 @@ let isLoading = false, isError = false;
 let isProMode = true;
 let modalInfo: any = null;
 
-let blockExpiry = 0;
+window.blockExpiry = 0;
 let lastTimestamp = 0;
 
 const setProMode = (_isProMode: boolean) => {
@@ -281,22 +282,9 @@ const setProMode = (_isProMode: boolean) => {
 }
 
 // Event delegation for dynamically added buttons
-setInterval(() => {
-    setProMode(Number(blockExpiry || 0) > new Date().getTime());
+setInterval(async () => {
+    setProMode(Number(window.blockExpiry || 0) > new Date().getTime());
 }, 1000);
-
-window.addEventListener("message", (event) => {
-  if (event.source !== window) return;
-  
-  switch (event.data.type) {
-      case "UPDATE_WALLET_ADDRESS":
-          // Send the Phantom Wallet address to the background script
-          event.data.expiry && (blockExpiry = event.data.expiry);
-          break;
-      default:
-          break;
-  }
-});
 
 const showDetailPage = (visible: boolean) => {
     if (visible) {

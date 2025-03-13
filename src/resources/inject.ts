@@ -1,15 +1,15 @@
-import { Connection, clusterApiUrl, PublicKey } from "@solana/web3.js";
+import { Connection, clusterApiUrl, PublicKey, Transaction } from "@solana/web3.js";
 
-import { BlockWallet } from "./idl/block_wallet";
-import BlockWalletIDL from "./idl/block_wallet.json";
+import { BlockWallet } from "@src/common/solana/idl/block_wallet";
+import BlockWalletIDL from "@src/common/solana/idl/block_wallet.json";
 import { AnchorProvider, BN, Program } from "@coral-xyz/anchor";
 import { Buffer } from 'buffer';
 import { PhantomWalletAdapter, SolflareWalletAdapter } from '@solana/wallet-adapter-wallets';
 import { WalletAdapterNetwork, WalletReadyState } from '@solana/wallet-adapter-base';
-import { Wallet } from './wallet/utils';
+import { _FEE_ACCOUNT, _SOLANA_CONNECTION, Wallet } from '@src/common/solana/wallet/utils';
 
 let firstLoaded = false;
-console.log("RugShield Injected");
+// console.log("RugShield Injected");
 
 if (!firstLoaded) {
     firstLoaded = true;
@@ -31,128 +31,45 @@ if (!firstLoaded) {
     rugshield.getWallet = (): Wallet => {
         return rugshield.wallets[rugshield.config.wallet || 'phantom'];
     }
-    
-    rugshield.connection = new Connection(clusterApiUrl("devnet"));
-    rugshield.feeAccount = new PublicKey("FwLFdJeGwx7UUAQReU4tx94KA4KZjyp4eX8kdWf4yyG8");
-    
-    rugshield.getProgram = (provider: AnchorProvider) => {
-        return new Program<BlockWallet>(BlockWalletIDL as any, provider);
-    }
-    
-    rugshield.blockWallet = async (blockInterval: number) => {
-        // console.log("Blocking Wallet....", blockInterval);
+
+    rugshield.signTransactions = async (serializedTxs: string[]) => {
         try {
-            if (!blockInterval || !rugshield.getWallet().connected) {
-                window.postMessage({ type: "UPDATE_WALLET_STATE", code: 1, data: 'BLOCK' }, "*");
-                return;
+            if (!rugshield.getWallet().connected) return null;
+            let serializedSignedTxs = [];
+            for (const serializedTx of serializedTxs) {
+                // Convert the base64 string back to a Transaction object
+                const txBuffer = Buffer.from(serializedTx, 'base64');
+                const tx = Transaction.from(txBuffer);
+                
+                // Retrieve your wallet (assumes getWallet() returns an object with a signTransaction method)
+                const wallet = rugshield.getWallet() as Wallet;
+                
+                // Sign the transaction using your wallet
+                const signedTx = await wallet.signTransaction(tx);
+                serializedSignedTxs.push(signedTx.serialize().toString('base64'));
             }
-            const provider = new AnchorProvider(rugshield.connection, rugshield.getWallet() as any, AnchorProvider.defaultOptions());
-            const program = rugshield.getProgram(provider);
-            const [walletPDA] = PublicKey.findProgramAddressSync(
-                [Buffer.from("wallet"), provider.wallet.publicKey.toBuffer()],
-                program.programId
-            );
-    
-            const accountInfo = await rugshield.connection.getAccountInfo(walletPDA);
-            // console.log("Account Info", accountInfo);
-            if (!accountInfo) {
-                const tx = await program.methods.initialize(rugshield.feeAccount)
-                .accounts({
-                    user: provider.wallet.publicKey,
-                })
-                .rpc();
-                await rugshield.connection.confirmTransaction(tx, 'finalized');
-            }
-            // If account exists, just send block instruction
-            const tx = await program.methods.blockWallet(new BN(blockInterval * 60 * 60))
-            .accounts({
-                user: provider.wallet.publicKey,
-                feeAccount: rugshield.feeAccount,
-            })
-            .rpc();
-            await rugshield.connection.confirmTransaction(tx, 'finalized');
-    
-            window.postMessage({ type: "UPDATE_WALLET_STATE", code: 0, data: 'BLOCK' }, "*");
-        } catch(e) {
-            // console.log("Block Wallet Error:", e);
-            window.postMessage({ type: "UPDATE_WALLET_STATE", code: 1, data: 'BLOCK' }, "*");
-        }
-    }
-    
-    rugshield.unblockWallet = async () => {
-        // console.log("Unblocking Wallet....");
-        try {
-            if (!rugshield.getWallet().connected) {
-                window.postMessage({ type: "UPDATE_WALLET_STATE", code: 1, data: 'UNBLOCK' }, "*");
-                return;
-            }
-            const provider = new AnchorProvider(rugshield.connection, rugshield.getWallet() as any, AnchorProvider.defaultOptions());
-            const program = rugshield.getProgram(provider);
-            const [walletPDA] = PublicKey.findProgramAddressSync(
-                [Buffer.from("wallet"), provider.wallet.publicKey.toBuffer()],
-                program.programId
-            );
-    
-            const accountInfo = await rugshield.connection.getAccountInfo(walletPDA);
-            // console.log("Account Info", accountInfo);
-            if (!accountInfo) {
-                const tx = await program.methods.initialize(rugshield.feeAccount)
-                .accounts({
-                    user: provider.wallet.publicKey,
-                })
-                .rpc();
-                await rugshield.connection.confirmTransaction(tx, 'finalized');
-            }
-            const tx = await program.methods.unblockWallet()
-                .accounts({
-                    user: provider.wallet.publicKey,
-                    feeAccount: rugshield.feeAccount,
-                })
-                .rpc();
-            await rugshield.connection.confirmTransaction(tx, 'finalized');
-    
-            window.postMessage({ type: "UPDATE_WALLET_STATE", code: 0, data: 'UNBLOCK' }, "*");
-        } catch(e) {
-            // console.log("Unblock Wallet Error:", e);
-            window.postMessage({ type: "UPDATE_WALLET_STATE", code: 1, data: 'UNBLOCK' }, "*");
-        }
-    }
-    
-    rugshield.updateWalletAddress = async () => {
-        // console.log("UPDATE_WALLET_ADDRESS", rugshield.getWallet().publicKey?.toBase58());
-        if (!rugshield.getWallet().connected) {
-            window.postMessage({ type: "UPDATE_WALLET_ADDRESS", address: '', expiry: 0 }, "*");
-            return;
-        }
-        try {
-            const provider = new AnchorProvider(rugshield.connection, rugshield.getWallet() as any, AnchorProvider.defaultOptions());
-            const program = rugshield.getProgram(provider);
-            const [walletPDA] = PublicKey.findProgramAddressSync(
-                [Buffer.from("wallet"), provider.wallet.publicKey.toBuffer()],
-                program.programId
-            );
-            let expiry = 0;
-            try {
-                const walletInfo = await program.account.wallet.fetch(walletPDA);
-                expiry = walletInfo.blockExpiry.toNumber() * 1000;
-            } catch (e) {
-            }
-            const balance = await rugshield.connection.getBalance(provider.wallet.publicKey);
-            window.postMessage({ type: "UPDATE_WALLET_ADDRESS", address: rugshield.getWallet().publicKey?.toBase58(), expiry: expiry, balance: balance }, "*");
+            return serializedSignedTxs;
         } catch (e) {
-            console.log("ERROR", e);
-            window.postMessage({ type: "UPDATE_WALLET_ADDRESS", address: rugshield.getWallet().publicKey?.toBase58(), expiry: 0 }, "*");
+            console.error(e);
         }
+        return null;
+    }
+
+    rugshield.updateWalletAddress = () => {
+        window.postMessage({ type: "UPDATE_WALLET_ADDRESS", address: rugshield.getWallet().publicKey?.toBase58() }, "*");
     }
 
     rugshield.handleMessageCallback = async (event: MessageEvent<any>) => {
-        // console.log("Message", event.data);
-        if (event.data.type === "FROM_BLOCK_WALLET") {
-            if (event.data.data.wallet) {
+        if (event.data.type === "FROM_RUGSHIELD") {
+            // console.log("Message", event.data);
+            if (event.data.data.wallet) { 
                 rugshield.config.wallet = event.data.data.wallet;
             }
             if (rugshield.getWallet()) {
                 switch (event.data.message) {
+                case 'REQUEST_WALLET_ADDRESS':
+                    rugshield.updateWalletAddress();    
+                    break;
                 case 'DISCONNECT_WALLET':
                     await rugshield.getWallet().disconnect();
                     rugshield.updateWalletAddress();
@@ -164,20 +81,26 @@ if (!firstLoaded) {
                     }else {
                         try {
                             await rugshield.getWallet().connect();
-                        } catch {
+                        } catch(e) {
+                            console.error(e);
                         }
                         rugshield.updateWalletAddress();
                     }
                     break;
-                case 'REQUEST_WALLET_ADDRESS':
-                    rugshield.updateWalletAddress();
-                    break;
-                case 'BLOCK_WALLET':
-                    rugshield.blockWallet(event.data.data.interval || 0);
-                    break;
-                case 'UNBLOCK_WALLET':
-                    rugshield.unblockWallet();
-                    break;
+                case 'SIGN_TRANSACTIONS':
+                    const result = await rugshield.signTransactions(event.data.data.txs);
+                    if (result) {
+                        window.postMessage({ type: "SEND_TRANSACTIONS", data: {
+                            type: event.data.data.type,
+                            txs: result
+                        } }, "*");
+                    }else {
+                        window.postMessage({ type: "UPDATE_WALLET_STATE", code: 1, data: event.data.data.type }, "*");
+                    }
+                    break; 
+                case 'SEND_TRANSACTIONS':
+                    window.postMessage({ type: "UPDATE_WALLET_STATE", code: event.data.data.success ? 0 : 1, data: event.data.data.type }, "*");
+                    break;  
                 }
             }
         }

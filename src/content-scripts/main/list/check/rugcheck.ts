@@ -8,7 +8,7 @@ fetch('https://api.rugcheck.xyz/public/known_accounts.json').then(async (respons
     if (!response.ok) return;
     accountInfoMap = await response.json();
 }).catch((error) => {
-    console.log(error);
+    // console.log(error);
 });
 
 async function updateReport (mintAddress: string) {
@@ -126,7 +126,7 @@ export async function checkInsiders(tokenAddress: string, connection: Connection
                             }
                         }
                     } catch (e) {
-                        console.log(e);
+                        // console.log(e);
                     }
                 }
             }
@@ -142,7 +142,7 @@ export async function checkInsiders(tokenAddress: string, connection: Connection
             data: insiderActivity
         }
     } catch (e) {
-        console.log('Error fetching insider activity', e);
+        // console.log('Error fetching insider activity', e);
     }
     return {
         'success': false,
